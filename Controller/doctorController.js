@@ -2,6 +2,7 @@ const Doctor = require('../Model/doctorModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const Schedule = require('../Model/scheduleModel')
 
 require('dotenv').config()
 
@@ -275,6 +276,44 @@ const addMoreData = async (req, res) => {
 
 }
 
+const setSchedule = async (req,res) =>{
+    try {
+        const { selectedTimeSlots, selectedDays } = req.body;
+
+        const schedule = new Schedule({
+            doc_id: req.params.doctorId,
+            Day :selectedDays,
+            Time :  selectedTimeSlots
+        })
+        const scheduleSave = await schedule.save()
+        if (scheduleSave) {
+            res.status(200).json({message:"Saved Schedule"})
+        } else {
+            res.status(500).json({ message: "Failed to save schedule" });
+        }
+    } catch (error) {
+        res.status(500).json({ message: "Internal server error" });
+        console.log(error);
+    }
+}
+
+const viewDocSchedule = async (req,res) => {
+    try {
+        const schedule = await Schedule.findOne({
+            doc_id:req.params.doctorId
+        })
+        if (schedule) {
+            console.log(schedule);
+            res.status(200).json({message:"Doctors Schedule found",schedule:schedule})
+        } else {
+            res.status(404).json({message:"Cannot find doctors schedule"})
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({message:"Internal Server Error"})
+    }
+}
+
 
 
 
@@ -286,5 +325,7 @@ module.exports = {
     doctorLogin,
     findDoctor,
     sendVerifyMail,
-    addMoreData
+    addMoreData,
+    setSchedule,
+    viewDocSchedule
 }

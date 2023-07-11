@@ -2,11 +2,8 @@ const mongoose = require('mongoose');
 
 const ScheduleSchema = new mongoose.Schema({
     doc_id: { type: String, required: true },
-    Day: {
-        startTime: { type: Date },
-        endTime: { type: Date },
-        status: { type: Boolean },
-    }
+    Day: { type:Array ,required: true},
+    Time: { type:Array ,required: true}
 
 }, { collection: 'schedule' });
 

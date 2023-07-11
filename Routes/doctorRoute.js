@@ -13,7 +13,9 @@ doctor_route.post('/login', doctorController.doctorLogin);
 doctor_route.get('/profile', validateDoctorToken, doctorController.findDoctor );
 doctor_route.post('/send-verifyemail',doctorController.sendVerifyMail)
 doctor_route.post('/resend-otp',doctorController.resendOtp);
-doctor_route.post('/start-journey',upload.single('certificate'), doctorController.addMoreData )
+doctor_route.post('/start-journey',upload.single('certificate'), doctorController.addMoreData );
+doctor_route.post('/set-schedule',validateDoctorToken,doctorController.setSchedule);
+doctor_route.get('/schedule-data',validateDoctorToken,doctorController.viewDocSchedule);
 
 
 module.exports = doctor_route;

@@ -287,7 +287,7 @@ const setSchedule = async (req,res) =>{
         })
         const scheduleSave = await schedule.save()
         if (scheduleSave) {
-            res.status(200).json({message:"Saved Schedule"})
+            res.status(200).json({message:"Saved Schedule",schedule: scheduleSave})
         } else {
             res.status(500).json({ message: "Failed to save schedule" });
         }
@@ -299,6 +299,7 @@ const setSchedule = async (req,res) =>{
 
 const viewDocSchedule = async (req,res) => {
     try {
+        console.log('hy');
         const schedule = await Schedule.findOne({
             doc_id:req.params.doctorId
         })

@@ -253,7 +253,7 @@ const findDoctor = async (req, res) => {
 const addMoreData = async (req, res) => {
     console.log(req.body, "this is body");
     try {
-        const { age, gender, regno, specialization, experience, docId } = req.body
+        const { age, gender, regno, specialization, experience, docId,fare } = req.body
         const doctor = await Doctor.findByIdAndUpdate(docId,
             {
                 age,
@@ -261,6 +261,7 @@ const addMoreData = async (req, res) => {
                 regno,
                 specialization,
                 experience,
+                fare,
                 certificate: req.file.filename,
             }, { new: true })
         if (!doctor) {
@@ -276,18 +277,23 @@ const addMoreData = async (req, res) => {
 
 }
 
-const setSchedule = async (req,res) =>{
+const setSchedule = async (req, res) => {
     try {
         const { selectedTimeSlots, selectedDays } = req.body;
 
         const schedule = new Schedule({
             doc_id: req.params.doctorId,
-            Day :selectedDays,
-            Time :  selectedTimeSlots
+            schedule: selectedDays.map((day) => ({
+                day,
+                time: selectedTimeSlots.map((timeslot) => ({
+                    timeslot,
+                })),
+            })),
         })
+
         const scheduleSave = await schedule.save()
         if (scheduleSave) {
-            res.status(200).json({message:"Saved Schedule",schedule: scheduleSave})
+            res.status(200).json({ message: "Saved Schedule", schedule: scheduleSave })
         } else {
             res.status(500).json({ message: "Failed to save schedule" });
         }
@@ -297,21 +303,21 @@ const setSchedule = async (req,res) =>{
     }
 }
 
-const viewDocSchedule = async (req,res) => {
+const viewDocSchedule = async (req, res) => {
     try {
         console.log('hy');
         const schedule = await Schedule.findOne({
-            doc_id:req.params.doctorId
+            doc_id: req.params.doctorId
         })
         if (schedule) {
             console.log(schedule);
-            res.status(200).json({message:"Doctors Schedule found",schedule:schedule})
+            res.status(200).json({ message: "Doctors Schedule found", schedule: schedule })
         } else {
-            res.status(404).json({message:"Cannot find doctors schedule"})
+            res.status(404).json({ message: "Cannot find doctors schedule" })
         }
     } catch (error) {
         console.log(error);
-        res.status(500).json({message:"Internal Server Error"})
+        res.status(500).json({ message: "Internal Server Error" })
     }
 }
 

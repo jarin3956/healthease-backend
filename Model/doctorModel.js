@@ -11,6 +11,7 @@ const DoctorSchema = new mongoose.Schema({
     password: { type: String, required: true },
     profileimg: { type: String, required: true },
     certificate: { type: String},
+    fare:{ type : Number },
     status: { type: Boolean, default: false },
     token : {type: String , default:''},
     approval: {type: Boolean , default:false}

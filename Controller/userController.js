@@ -4,26 +4,29 @@ const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const speakeasy = require('speakeasy');
 const Spec = require('../Model/specializationModel')
-const Doctor = require('../Model/doctorModel')
+const Doctor = require('../Model/doctorModel');
+const Schedule = require('../Model/scheduleModel');
+const Booking = require('../Model/bookingModel');
+
 
 
 require('dotenv').config()
 
 
 function generateOTP(secret) {
-    
+
     const otp = speakeasy.totp({
-      secret: secret.base32,
-      digits: 6,
-      window: 30,
+        secret: secret.base32,
+        digits: 6,
+        window: 30,
     });
     return otp;
-  }
+}
 
-  const secret = speakeasy.generateSecret({ length: 20 });
+const secret = speakeasy.generateSecret({ length: 20 });
 
-  
-  const OTP = generateOTP(secret);
+
+const OTP = generateOTP(secret);
 
 const sendOtp = async (name, email) => {
 
@@ -94,7 +97,7 @@ const userRegister = async (req, res) => {
                     sendOtp(req.body.name, req.body.email);
                     setTimeout(async () => {
                         await User.findByIdAndUpdate(userData.id, { token: '' });
-                      }, 60000);
+                    }, 60000);
                     res.json({ status: 'ok', id: user._id });
                 } else {
                     res.json({ status: 'error', message: 'Failed to save' })
@@ -111,7 +114,7 @@ const userRegister = async (req, res) => {
 }
 
 
-const resendOtp = async (req,res) => {
+const resendOtp = async (req, res) => {
     console.log("hai where is the error");
     console.log(req.body.userId);
     try {
@@ -121,13 +124,13 @@ const resendOtp = async (req,res) => {
             user.token = OTP
             let userData = await user.save()
             if (userData) {
-                sendOtp(user.name,user.email)
-                res.json({ status: 'ok',message:"Successfully send otp" })
-            }else{
-                res.json({ status: 'error',message:"user cannot be saved" })
+                sendOtp(user.name, user.email)
+                res.json({ status: 'ok', message: "Successfully send otp" })
+            } else {
+                res.json({ status: 'error', message: "user cannot be saved" })
             }
         } else {
-            res.json({ status: 'error',message:"user not found" })
+            res.json({ status: 'error', message: "user not found" })
         }
     } catch (error) {
         console.log(error.message);
@@ -145,11 +148,11 @@ const verifyLogin = async (req, res) => {
             res.json({ status: 'ok' });
         }
         else if (!user) {
-            
+
             return res.json({ status: 'error', message: 'User not found' });
         }
         else if (user.token != otp) {
-            
+
             return res.json({ status: 'error', message: 'Incorrect OTP' });
         }
 
@@ -214,50 +217,50 @@ const addMoreData = async function (req, res) {
         const user = await User.findByIdAndUpdate(userId,
             { age, gender, height, weight }, { new: true })
         if (!user) {
-            res.json({ status:'error',message:'User not found' })
+            res.json({ status: 'error', message: 'User not found' })
         }
-        res.json( {status:'ok',user:user} )    
+        res.json({ status: 'ok', user: user })
     } catch (error) {
-        res.json({ status:'error',message:'Cannot update now' })
+        res.json({ status: 'error', message: 'Cannot update now' })
     }
 }
 
 const profileEdit = async function (req, res) {
     try {
-      const { userId } = req.params;
-      let user = await User.findById(userId);
-      if (user) {
-        user.name = req.body.name;
-  
-        if (req.file) {
-          user.image = req.file.filename;
-        }
-  
-        if (req.body.age) {
-          user.age = req.body.age;
-        }
-        if (req.body.height) {
-          user.height = req.body.height;
-        }
-        if (req.body.weight) {
-          user.weight = req.body.weight;
-        }
-        if (req.body.gender) {
-          user.gender = req.body.gender;
-        }
-  
-        await user.save();
-        console.log("the is the user 123",user);
-        res.json({ status: 'ok', updateduser: user });
-      } else {
-        res.json({ status: 'error', message: 'Cannot find user' });
-      }
-    } catch (error) {
-      res.json({ status: 'error', message: 'Cannot save data' });
-    }
-  };
+        const { userId } = req.params;
+        let user = await User.findById(userId);
+        if (user) {
+            user.name = req.body.name;
 
-  const viewSpec = async (req,res) => {
+            if (req.file) {
+                user.image = req.file.filename;
+            }
+
+            if (req.body.age) {
+                user.age = req.body.age;
+            }
+            if (req.body.height) {
+                user.height = req.body.height;
+            }
+            if (req.body.weight) {
+                user.weight = req.body.weight;
+            }
+            if (req.body.gender) {
+                user.gender = req.body.gender;
+            }
+
+            await user.save();
+            console.log("the is the user 123", user);
+            res.json({ status: 'ok', updateduser: user });
+        } else {
+            res.json({ status: 'error', message: 'Cannot find user' });
+        }
+    } catch (error) {
+        res.json({ status: 'error', message: 'Cannot save data' });
+    }
+};
+
+const viewSpec = async (req, res) => {
     try {
         const specData = await Spec.find({})
         if (specData) {
@@ -269,73 +272,89 @@ const profileEdit = async function (req, res) {
     } catch (error) {
         console.log(error);
     }
-  }
+}
 
-  const loadDoctors = async (req,res) => {
+const loadDoctors = async (req, res) => {
 
     try {
-        const specialId = req.params.specialId
-        
-        const doctor = await Doctor.aggregate([
-            {
-                $match: {
-                    specialization:specialId
-                }
-              },
-            {
-              $addFields: {
-                specializationId: {
-                  $toObjectId: '$specialization'
-                }
-              }
-            },
-            {
-              $lookup: {
-                from: 'specialization',
-                localField: 'specializationId',
-                foreignField: '_id',
-                as: 'specializationData'
-              }
-            },
-            {
-              $unwind: {
-                path: '$specializationData',
-                preserveNullAndEmptyArrays: true
-              }
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                age: 1,
-                gender: 1,
-                regno: 1,
-                experience: 1,
-                email: 1,
-                password: 1,
-                profileimg: 1,
-                certificate: 1,
-                status: 1,
-                token: 1,
-                approval: 1,
-                specialization: {
-                  $ifNull: ['$specializationData.name', 'Unknown']
-                }
-              }
-            }
-          ]);
+        const specialName = req.params.specialName
+
+        const specialization = await Spec.findOne({ name: specialName })
+
+        console.log(specialization._id, "ithann special");
+
+        const doctor = await Doctor.find({ specialization: specialization._id })
         if (doctor) {
-            res.json( {status:'ok',doctor:doctor} )
+            console.log(doctor, "ithann doc");
+            res.json({ status: 'ok', doctor: doctor })
         } else {
-            res.json({ status:'error',message:'No doctors found' })
+            res.json({ status: 'error', message: 'No doctors found' })
         }
     } catch (error) {
         console.log(error);
     }
-  }
+}
 
 
-  
+const viewDocSlot = async (req, res) => {
+    try {
+        const docId = req.params.docId;
+        const schedule = await Schedule.findOne({ doc_id: docId })
+        if (schedule) {
+            res.status(200).json({ message: "Schedule found", schedule: schedule })
+        } else {
+            res.status(404).json({ message: "Schedule not found" })
+        }
+    } catch (error) {
+        console.log(error.message);
+    }
+}
+
+const bookConsultation = async (req, res) => {
+    let amount = 0;
+    try {
+        const { docId, selectedDay, selectedTime } = req.body
+        const userId = req.params.userId
+        console.log(userId, "book token");
+        console.log(docId, selectedDay, selectedTime, "next");
+        
+        const doctor = await Doctor.findById(docId)
+        console.log(doctor,"doc undo");
+        if (doctor) {
+            const price = doctor.fare; 
+            const percentage = 15;
+            const percentageAmount = (percentage / 100) * price;
+            amount = price + percentageAmount;
+        }
+        const booking = new Booking({
+            DocId: docId,
+            UserId: userId,
+            Day: selectedDay,
+            TimeSlot: selectedTime,
+            Fare:amount
+        })
+        const booked = booking.save()
+        if (booked) {
+            const schedule = await Schedule.findOne({ doc_id: docId })
+            if (schedule) {
+                const dayToUpdate = schedule.schedule.find(day => day.day === selectedDay);
+                if (dayToUpdate) {
+                    const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime)
+                    if (timeSlotToUpdate) {
+                        timeSlotToUpdate.isAvailable = false;
+                        await schedule.save();
+                        res.status(200).json({message:"Bookings Saved Successfully"})
+                    } else {
+                        res.status(500).json({ message: "Failed to save bookings" });
+                    }
+                }
+            }
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
+}
 
 
 module.exports = {
@@ -347,5 +366,7 @@ module.exports = {
     addMoreData,
     profileEdit,
     viewSpec,
-    loadDoctors
+    loadDoctors,
+    viewDocSlot,
+    bookConsultation
 }

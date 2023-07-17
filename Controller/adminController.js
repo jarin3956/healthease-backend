@@ -1,9 +1,12 @@
 const Admin = require('../Model/adminModel');
 const Users = require('../Model/userModel');
-const Doctors = require('../Model/doctorModel')
+const Doctors = require('../Model/doctorModel');
+const Bookings = require('../Model/bookingModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
+const mongoose = require('mongoose')
+
 require('dotenv').config()
 
 const securePassword = async (password) => {
@@ -228,6 +231,98 @@ const changeDoctorStatus = async function (req, res) {
     }
 }
 
+const loadBooking = async (req,res) =>{
+    try {
+        const bookings = await Bookings.find({})
+        if (bookings) {
+            res.status(200).json({ message:"Bookings found",bookingData:bookings })
+        } else {
+            res.status(404).json({ message:"Bookings not found" })
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+const loadDoctorProfile = async (req,res) => {
+    try {
+
+        const newid = new mongoose.Types.ObjectId(req.params.doctorId)
+
+        const doctor = await Doctors.aggregate([
+            {
+              $match: { _id: newid }
+            },
+            {
+                $addFields: {
+                  specializationId: {
+                    $toObjectId: '$specialization'
+                  }
+                }
+              },
+            {
+              $lookup: {
+                from: 'specialization',
+                localField: 'specializationId',
+                foreignField: '_id',
+                as: 'specializationData'
+              }
+            },
+            {
+                $unwind: {
+                  path: '$specializationData',
+                  preserveNullAndEmptyArrays: true
+                }
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  age: 1,
+                  gender: 1,
+                  regno: 1,
+                  experience: 1,
+                  email: 1,
+                  password: 1,
+                  profileimg: 1,
+                  certificate: 1,
+                  fare: 1,
+                  status: 1,
+                  token: 1,
+                  approval: 1,
+                  specialization: {
+                    $ifNull: ['$specializationData.name', 'Unknown']
+                  }
+                }
+              }
+            
+            
+          ]);
+        if (doctor) {
+            res.status(200).json({message:'Doctor found',doctorData:doctor[0]})
+        } else {
+            res.status(404).json({message:'Doctor not found'})
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+const loadUserProfile = async (req,res) => {
+    try {
+        
+        const userId = req.params.userId
+        const user = await Users.findById(userId)
+        if (user) {
+            res.status(200).json({message:'User found',userData:user})
+        } else {
+            res.status(404).json({message:'User not found'})
+        }
+    } catch (error) {
+        
+    }
+}
+
 
 
 
@@ -242,5 +337,8 @@ module.exports = {
     loadUsers,
     loadDoctors,
     changeUserStatus,
-    changeDoctorStatus
+    changeDoctorStatus,
+    loadBooking,
+    loadDoctorProfile,
+    loadUserProfile
 }

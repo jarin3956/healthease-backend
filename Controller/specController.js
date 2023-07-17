@@ -28,7 +28,7 @@ const specRegister = async (req,res) => {
 
 const loadSpec = async (req,res) => {
     try {
-        let specData = await Spec.find({})
+        let specData = await Spec.find({ status: true })
         if (specData) {
             res.status(200).json({ spec: specData });
         } else {
@@ -98,6 +98,19 @@ const editSpec = async (req,res) => {
     }
 }
 
+const adminLoadSpec = async (req,res) => {
+    try {
+        let specData = await Spec.find({ })
+        if (specData) {
+            res.status(200).json({ spec: specData });
+        } else {
+            res.status(404).json({ message: 'No data found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' });
+        console.log(error);
+    }
+}
 
 
 
@@ -106,5 +119,6 @@ module.exports = {
     loadSpec,
     changeStatus,
     deleteSpec,
-    editSpec
+    editSpec,
+    adminLoadSpec
 }

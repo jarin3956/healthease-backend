@@ -115,8 +115,7 @@ const userRegister = async (req, res) => {
 
 
 const resendOtp = async (req, res) => {
-    console.log("hai where is the error");
-    console.log(req.body.userId);
+    
     try {
         const userId = req.body.userId
         let user = await User.findById(userId)
@@ -250,7 +249,7 @@ const profileEdit = async function (req, res) {
             }
 
             await user.save();
-            console.log("the is the user 123", user);
+           
             res.json({ status: 'ok', updateduser: user });
         } else {
             res.json({ status: 'error', message: 'Cannot find user' });
@@ -264,7 +263,7 @@ const viewSpec = async (req, res) => {
     try {
         const specData = await Spec.find({})
         if (specData) {
-            console.log(specData);
+            
             res.json({ status: 'ok', spec: specData });
         } else {
             res.json({ status: 'error', message: 'Cannot find specialization' });
@@ -281,9 +280,7 @@ const loadDoctors = async (req, res) => {
 
         const specialization = await Spec.findOne({ name: specialName })
 
-        console.log(specialization._id, "ithann special");
-
-        const doctor = await Doctor.find({ specialization: specialization._id })
+        const doctor = await Doctor.find({ specialization: specialization._id, approval: true  })
         if (doctor) {
             console.log(doctor, "ithann doc");
             res.json({ status: 'ok', doctor: doctor })
@@ -301,7 +298,7 @@ const viewDocSlot = async (req, res) => {
         const docId = req.params.docId;
         const schedule = await Schedule.findOne({ doc_id: docId })
         if (schedule) {
-            res.status(200).json({ message: "Schedule found", schedule: schedule })
+            res.status(200).json({ message: "Schedule found", schedule: schedule.schedule })
         } else {
             res.status(404).json({ message: "Schedule not found" })
         }
@@ -313,15 +310,15 @@ const viewDocSlot = async (req, res) => {
 const bookConsultation = async (req, res) => {
     let amount = 0;
     try {
-        const { docId, selectedDay, selectedTime } = req.body
+        const { docId, selectedDay, selectedTime,selectedDate } = req.body.bookingData
         const userId = req.params.userId
-        console.log(userId, "book token");
-        console.log(docId, selectedDay, selectedTime, "next");
-        
+        // console.log(userId, "book token");
+        // console.log(docId, selectedDay, selectedTime, "next");
+
         const doctor = await Doctor.findById(docId)
-        console.log(doctor,"doc undo");
+        // console.log(doctor, "doc undo");
         if (doctor) {
-            const price = doctor.fare; 
+            const price = doctor.fare;
             const percentage = 15;
             const percentageAmount = (percentage / 100) * price;
             amount = price + percentageAmount;
@@ -329,9 +326,10 @@ const bookConsultation = async (req, res) => {
         const booking = new Booking({
             DocId: docId,
             UserId: userId,
+            Date: selectedDate,
             Day: selectedDay,
             TimeSlot: selectedTime,
-            Fare:amount
+            Fare: amount
         })
         const booked = booking.save()
         if (booked) {
@@ -343,7 +341,7 @@ const bookConsultation = async (req, res) => {
                     if (timeSlotToUpdate) {
                         timeSlotToUpdate.isAvailable = false;
                         await schedule.save();
-                        res.status(200).json({message:"Bookings Saved Successfully"})
+                        res.status(200).json({ message: "Bookings Saved Successfully" })
                     } else {
                         res.status(500).json({ message: "Failed to save bookings" });
                     }
@@ -355,6 +353,8 @@ const bookConsultation = async (req, res) => {
         console.log(error);
     }
 }
+
+
 
 
 module.exports = {

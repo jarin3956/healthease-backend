@@ -2,7 +2,8 @@ const Doctor = require('../Model/doctorModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-const Schedule = require('../Model/scheduleModel')
+const Schedule = require('../Model/scheduleModel');
+const mongoose = require('mongoose')
 
 require('dotenv').config()
 
@@ -226,23 +227,64 @@ const doctorLogin = async (req, res) => {
 }
 
 const findDoctor = async (req, res) => {
-    try {
-        const doctor = await Doctor.findById({ _id: req.params.doctorId });
-        if (doctor) {
-            res.status(200).json({
-                _id: doctor._id,
-                name: doctor.name,
-                age: doctor.age,
-                gender: doctor.gender,
-                regno: doctor.regno,
-                specialization: doctor.specialization,
-                experience: doctor.experience,
-                email: doctor.email,
-                profileimg: doctor.profileimg,
-                certificate: doctor.certificate,
-                approval: doctor.approval
+     try{ 
 
-            });
+        const newid = new mongoose.Types.ObjectId(req.params.doctorId)
+        
+        const doctor = await Doctor.aggregate([
+            {
+              $match: { _id: newid }
+            },
+            {
+                $addFields: {
+                  specializationId: {
+                    $toObjectId: '$specialization'
+                  }
+                }
+              },
+            {
+              $lookup: {
+                from: 'specialization',
+                localField: 'specializationId',
+                foreignField: '_id',
+                as: 'specializationData'
+              }
+            },
+            {
+                $unwind: {
+                  path: '$specializationData',
+                  preserveNullAndEmptyArrays: true
+                }
+              },
+              {
+                $project: {
+                  _id: 1,
+                  name: 1,
+                  age: 1,
+                  gender: 1,
+                  regno: 1,
+                  experience: 1,
+                  email: 1,
+                  password: 1,
+                  profileimg: 1,
+                  certificate: 1,
+                  fare: 1,
+                  status: 1,
+                  token: 1,
+                  approval: 1,
+                  specialization: {
+                    $ifNull: ['$specializationData.name', 'Unknown']
+                  }
+                }
+              }
+            
+            
+          ]);
+        if (doctor) {
+            console.log(doctor,"doc data analysis");
+            res.status(200).json({doctor:doctor[0]});
+        }else{
+            res.status(404).json({message:"Cound not find doctor"})
         }
     } catch (error) {
         console.log(error.message);

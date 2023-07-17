@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
+const User = require('../Model/userModel');
 
-const validateToken = (req, res, next) => {
+
+const userVerify = async (req, res, next) => {
   const token = req.headers.authorization.split(' ')[1] || null;
   if (!token) {
     return res.status(401).json({ error: 'Unauthorized' });
@@ -8,6 +10,13 @@ const validateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.USER_SECRET);
+
+    const user = await User.findById(decoded.userId); 
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     req.params = decoded; 
     next(); 
   } catch (error) {
@@ -16,5 +25,5 @@ const validateToken = (req, res, next) => {
 };
 
 module.exports = {
-  validateToken
+  userVerify
 };

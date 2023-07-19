@@ -294,8 +294,15 @@ const findDoctor = async (req, res) => {
 
 const addMoreData = async (req, res) => {
     console.log(req.body, "this is body");
+    let amount = 0;
     try {
         const { age, gender, regno, specialization, experience, docId,fare } = req.body
+        if (fare) {
+            const price = parseInt(fare);
+            const percentage = 15;
+            const percentageAmount = (percentage / 100) * price;
+            amount = price + percentageAmount;
+        }
         const doctor = await Doctor.findByIdAndUpdate(docId,
             {
                 age,
@@ -304,6 +311,7 @@ const addMoreData = async (req, res) => {
                 specialization,
                 experience,
                 fare,
+                final_fare: amount,
                 certificate: req.file.filename,
             }, { new: true })
         if (!doctor) {

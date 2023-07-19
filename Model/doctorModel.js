@@ -12,6 +12,7 @@ const DoctorSchema = new mongoose.Schema({
     profileimg: { type: String, required: true },
     certificate: { type: String},
     fare:{ type : Number },
+    final_fare:{type:Number },
     status: { type: Boolean, default: false },
     token : {type: String , default:''},
     approval: {type: Boolean , default:false}

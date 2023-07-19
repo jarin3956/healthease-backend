@@ -138,6 +138,7 @@ const loadDoctors = async function (req, res) {
                 profileimg: 1,
                 certificate: 1,
                 fare: 1,
+                final_fare: 1,
                 status: 1,
                 token: 1,
                 approval: 1,

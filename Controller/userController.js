@@ -307,52 +307,52 @@ const viewDocSlot = async (req, res) => {
     }
 }
 
-const bookConsultation = async (req, res) => {
-    let amount = 0;
-    try {
-        const { docId, selectedDay, selectedTime,selectedDate } = req.body.bookingData
-        const userId = req.params.userId
-        // console.log(userId, "book token");
-        // console.log(docId, selectedDay, selectedTime, "next");
+// const bookConsultation = async (req, res) => {
+//     let amount = 0;
+//     try {
+//         const { docId, selectedDay, selectedTime,selectedDate } = req.body.bookingData
+//         const userId = req.params.userId
+//         // console.log(userId, "book token");
+//         // console.log(docId, selectedDay, selectedTime, "next");
 
-        const doctor = await Doctor.findById(docId)
-        // console.log(doctor, "doc undo");
-        if (doctor) {
-            const price = doctor.fare;
-            const percentage = 15;
-            const percentageAmount = (percentage / 100) * price;
-            amount = price + percentageAmount;
-        }
-        const booking = new Booking({
-            DocId: docId,
-            UserId: userId,
-            Date: selectedDate,
-            Day: selectedDay,
-            TimeSlot: selectedTime,
-            Fare: amount
-        })
-        const booked = booking.save()
-        if (booked) {
-            const schedule = await Schedule.findOne({ doc_id: docId })
-            if (schedule) {
-                const dayToUpdate = schedule.schedule.find(day => day.day === selectedDay);
-                if (dayToUpdate) {
-                    const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime)
-                    if (timeSlotToUpdate) {
-                        timeSlotToUpdate.isAvailable = false;
-                        await schedule.save();
-                        res.status(200).json({ message: "Bookings Saved Successfully" })
-                    } else {
-                        res.status(500).json({ message: "Failed to save bookings" });
-                    }
-                }
-            }
-        }
+//         const doctor = await Doctor.findById(docId)
+//         // console.log(doctor, "doc undo");
+//         if (doctor) {
+//             const price = doctor.fare;
+//             const percentage = 15;
+//             const percentageAmount = (percentage / 100) * price;
+//             amount = price + percentageAmount;
+//         }
+//         const booking = new Booking({
+//             DocId: docId,
+//             UserId: userId,
+//             Date: selectedDate,
+//             Day: selectedDay,
+//             TimeSlot: selectedTime,
+//             Fare: amount
+//         })
+//         const booked = booking.save()
+//         if (booked) {
+//             const schedule = await Schedule.findOne({ doc_id: docId })
+//             if (schedule) {
+//                 const dayToUpdate = schedule.schedule.find(day => day.day === selectedDay);
+//                 if (dayToUpdate) {
+//                     const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime)
+//                     if (timeSlotToUpdate) {
+//                         timeSlotToUpdate.isAvailable = false;
+//                         await schedule.save();
+//                         res.status(200).json({ message: "Bookings Saved Successfully" })
+//                     } else {
+//                         res.status(500).json({ message: "Failed to save bookings" });
+//                     }
+//                 }
+//             }
+//         }
 
-    } catch (error) {
-        console.log(error);
-    }
-}
+//     } catch (error) {
+//         console.log(error);
+//     }
+// }
 
 
 
@@ -368,5 +368,4 @@ module.exports = {
     viewSpec,
     loadDoctors,
     viewDocSlot,
-    bookConsultation
 }

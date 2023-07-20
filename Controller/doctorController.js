@@ -329,19 +329,32 @@ const addMoreData = async (req, res) => {
 
 const setSchedule = async (req, res) => {
     try {
-        const { selectedTimeSlots, selectedDays } = req.body;
+        // const { selectedTimeSlots, selectedDays } = req.body;
 
-        const schedule = new Schedule({
+        // const schedule = new Schedule({
+        //     doc_id: req.params.doctorId,
+        //     schedule: selectedDays.map((day) => ({
+        //         day,
+        //         time: selectedTimeSlots.map((timeslot) => ({
+        //             timeslot,
+        //         })),
+        //     })),
+        // })
+
+        const { schedule } = req.body;
+
+        const newSchedule = new Schedule({
             doc_id: req.params.doctorId,
-            schedule: selectedDays.map((day) => ({
-                day,
-                time: selectedTimeSlots.map((timeslot) => ({
-                    timeslot,
-                })),
+            schedule: schedule.map((day) => ({
+              day: day.day,
+              time: day.time.map((timeslot) => ({
+                timeslot: timeslot.timeslot,
+              })),
             })),
-        })
+          });
 
-        const scheduleSave = await schedule.save()
+        const scheduleSave = await newSchedule.save()
+        console.log(scheduleSave,"SCHEDULE SAVE AAH");
         if (scheduleSave) {
             res.status(200).json({ message: "Saved Schedule", schedule: scheduleSave })
         } else {

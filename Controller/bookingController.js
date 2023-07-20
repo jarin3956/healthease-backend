@@ -68,6 +68,40 @@ const loadDoctor = async (req, res) => {
     }
 }
 
+const checDocAvailability = async (req, res) => {
+    try {
+
+        const { selectedDay, selectedTime, docId } = req.body.verifyData
+
+        const schedule = await Schedule.findOne({ doc_id: docId })
+
+        if (schedule) {
+            const dayToUpdate = schedule.schedule.find(day => day.day === selectedDay);
+            if (dayToUpdate) {
+                const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime)
+                if (timeSlotToUpdate) {
+                    console.log(timeSlotToUpdate, "ithano mone prashnam");
+                    if (timeSlotToUpdate.isAvailable) {
+                        res.status(200).json({ message: "The is okay for booking" });
+                    } else {
+                        res.status(409).json({ message: "The selected time slot is already booked." });
+                    }
+                } else {
+                    res.status(404).json({ message: "Selected time slot not found in the schedule." });
+                }
+            } else {
+                res.status(404).json({ message: "Selected day not found in the schedule." });
+            }
+
+        } else {
+            res.status(404).json({ message: "Doctor's schedule not found." });
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: "An error occurred while checking availability." });
+    }
+}
+
 const bookConsultation = async (req, res) => {
     try {
 
@@ -85,29 +119,44 @@ const bookConsultation = async (req, res) => {
             Payment_create_time: payment_create_time,
             Payment_update_time: payment_update_time
         })
-        const booked = booking.save()
-        if (booked) {
-            const schedule = await Schedule.findOne({ doc_id: docId })
-            if (schedule) {
-                const dayToUpdate = schedule.schedule.find(day => day.day === selectedDay);
-                if (dayToUpdate) {
-                    const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime)
-                    if (timeSlotToUpdate) {
+        
+
+        const schedule = await Schedule.findOne({ doc_id: docId })
+        if (schedule) {
+            const dayToUpdate = schedule.schedule.find(day => day.day === selectedDay);
+            if (dayToUpdate) {
+                const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime);
+                if (timeSlotToUpdate) {
+
+                    if (timeSlotToUpdate.isAvailable) {
                         timeSlotToUpdate.isAvailable = false;
-                        await schedule.save();
-                        res.status(200).json({ message: "Bookings Saved Successfully",bookingData:booking })
+                        const scheduleSave = await schedule.save();
+                        if (scheduleSave) {
+                            const booked = booking.save();
+                            if (booked) {
+                                res.status(200).json({ message: "Booking Saved Successfully", bookingData: booking });
+                            } else {
+                                res.status(500).json({ message: "Failed to save bookings" });
+                            }
+                        } else {
+                            res.status(500).json({ message: "Failed to update doctors slot" });
+                        }
                     } else {
-                        res.status(500).json({ message: "Failed to save bookings" });
+                        booking.Status = 'FAILED';
+                        const booked = booking.save()
+                        res.status(409).json({ message: "The selected time slot is already booked." });
                     }
                 } else {
-                    res.status(500).json({ message: "Failed to save bookings" })
+                    res.status(500).json({ message: "Failed to save bookings" });
                 }
+
             } else {
-                res.status(500).json({ message: "Failed to save bookings" })
+                res.status(500).json({ message: "Failed to save bookings" });
             }
         } else {
-            res.status(500).json({ message: "Failed to save bookings" })
+            res.status(500).json({ message: "Failed to save bookings" });
         }
+
 
     } catch (error) {
         console.log(error);
@@ -117,5 +166,6 @@ const bookConsultation = async (req, res) => {
 
 module.exports = {
     loadDoctor,
-    bookConsultation
+    bookConsultation,
+    checDocAvailability
 }

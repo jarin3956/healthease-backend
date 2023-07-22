@@ -201,7 +201,8 @@ const findUser = async function (req, res) {
                 age: user.age,
                 gender: user.gender,
                 height: user.height,
-                weight: user.weight
+                weight: user.weight,
+                wallet: user.wallet
             });
         }
     } catch (error) {

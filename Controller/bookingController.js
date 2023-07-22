@@ -1,6 +1,7 @@
 const Bookings = require('../Model/bookingModel');
 const Doctor = require('../Model/doctorModel');
-const Schedule = require('../Model/scheduleModel')
+const Schedule = require('../Model/scheduleModel');
+const User = require('../Model/userModel')
 const mongoose = require('mongoose')
 
 const loadDoctor = async (req, res) => {
@@ -119,7 +120,7 @@ const bookConsultation = async (req, res) => {
             Payment_create_time: payment_create_time,
             Payment_update_time: payment_update_time
         })
-        
+
 
         const schedule = await Schedule.findOne({ doc_id: docId })
         if (schedule) {
@@ -164,8 +165,102 @@ const bookConsultation = async (req, res) => {
     }
 }
 
+const loadDoctorBooking = async (req, res) => {
+    try {
+        const { doctorId } = req.params;
+        const booking = await Bookings.find({ DocId: doctorId })
+        if (booking.length === 0) {
+            return res.status(404).json({ message: 'Doctor bookings not found' });
+        }
+
+        // Get all the unique UserIds from the bookings
+        const userIds = [...new Set(booking.map((booking) => booking.UserId))];
+
+        // Fetch user data for each UserId
+        const users = await User.find({ _id: { $in: userIds } }).lean().exec();
+
+        // Map user data to the corresponding booking by matching UserId
+        const bookingDataWithUserData = booking.map((booking) => {
+            const user = users.find((user) => user._id.toString() === booking.UserId);
+            return {
+                bookingData:booking,
+                userData: user
+            };
+        });
+
+        res.status(200).json({ message: 'Doctor bookings found', bookingData: bookingDataWithUserData });
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+const loadUserBooking = async (req,res) => {
+    try {
+
+        const {userId } = req.params
+        const booking = await Bookings.find({ UserId:userId })
+        if (booking.length === 0) {
+            return res.status(404).json({ message:'User booking not found' })
+        }
+
+        const doctorIds = [...new Set(booking.map((booking) => booking.DocId ))];
+
+        const doctors = await Doctor.find({ _id : { $in: doctorIds }}).lean().exec();
+
+        const bookingDataWithDoctorData = booking.map((booking) => {
+            const doctor = doctors.find((doctor) => doctor._id.toString() === booking.DocId);
+            return {
+                bookingData: booking,
+                doctorData: doctor
+            }
+        })
+        
+        res.status(200).json({ message:"User booking Found",bookingData:bookingDataWithDoctorData })
+        
+        
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Internal server error' });
+        
+    }
+}
+
+const cancelBooking = async (req, res) => {
+    try {
+        const bookingId = req.params.bookingId;
+        const booking = await Bookings.findById(bookingId)
+        if (booking) {
+            const user = await User.findByIdAndUpdate(booking.UserId, { $inc: { wallet: booking.Fare } })
+
+            if (user) {
+                booking.Status = 'CANCELLED'
+                const bookingSave = await booking.save()
+                if (bookingSave) {
+                    res.status(200).json({ message: 'Cancelled Booking' })
+                } else {
+                    res.status(500).json({ message: 'Internal server error, could not save the data' })
+                }
+            } else {
+                res.status(500).json({ message: 'Internal server error, could not save the make the wallet update' })
+            }
+        } else {
+            res.status(404).json({ message: "Cound not found the booking" })
+        }
+
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Internal server error' })
+    }
+}
+
 module.exports = {
     loadDoctor,
     bookConsultation,
-    checDocAvailability
+    checDocAvailability,
+    loadDoctorBooking,
+    cancelBooking,
+    loadUserBooking
 }

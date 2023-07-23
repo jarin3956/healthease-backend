@@ -11,7 +11,8 @@ const UserSchema = new mongoose.Schema({
     image: { type: String, required: true },
     wallet: { type: Number, default: 0 },
     status: { type: Boolean, default: false },
-    token : {type: String , default:''}
+    token : {type: String , default:''},
+    CreatedAt: { type : Date , default:Date.now }
 }, { collection: 'users' });
 
 const UserModel = mongoose.model('User', UserSchema);

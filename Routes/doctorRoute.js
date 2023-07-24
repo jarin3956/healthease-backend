@@ -15,6 +15,7 @@ doctor_route.post('/send-verifyemail',doctorController.sendVerifyMail)
 doctor_route.post('/resend-otp',doctorController.resendOtp);
 doctor_route.post('/start-journey',upload.single('certificate'), doctorController.addMoreData );
 doctor_route.post('/set-schedule',doctorVerify,doctorController.setSchedule);
+doctor_route.put('/update-schedule',doctorVerify,doctorController.updateSchedule)
 doctor_route.get('/schedule-data',doctorVerify,doctorController.viewDocSchedule);
 
 

@@ -56,7 +56,6 @@ const adminLogin = async (req, res) => {
         const passwordMatch = await bcrypt.compare(password, admin.password)
         if (passwordMatch) {
             const admintoken = jwt.sign({ adminId: admin._id }, process.env.ADMIN_SECRET)
-            // console.log(admintoken, 'admintoken');
             return res.json({ status: 'ok', admin: admintoken })
         } else {
             return res.json({ status: 'error', message: "Password do not match" })

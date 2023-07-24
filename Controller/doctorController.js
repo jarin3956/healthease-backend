@@ -84,9 +84,9 @@ const doctorRegister = async (req, res) => {
 
                 if (doctorData) {
                     sendOtp(req.body.name, req.body.email, doctor._id);
-                    res.json({ status: 'ok', id: doctor._id });
+                    res.status(200).json({ id: doctor._id });
                 } else {
-                    res.json({ status: 'error', message: 'Failed to save' })
+                    res.status(500).json({ message: 'Failed to save doctor data' })
                 }
 
             } else {
@@ -227,64 +227,64 @@ const doctorLogin = async (req, res) => {
 }
 
 const findDoctor = async (req, res) => {
-     try{ 
+    try {
 
         const newid = new mongoose.Types.ObjectId(req.params.doctorId)
-        
+
         const doctor = await Doctor.aggregate([
             {
-              $match: { _id: newid }
+                $match: { _id: newid }
             },
             {
                 $addFields: {
-                  specializationId: {
-                    $toObjectId: '$specialization'
-                  }
+                    specializationId: {
+                        $toObjectId: '$specialization'
+                    }
                 }
-              },
+            },
             {
-              $lookup: {
-                from: 'specialization',
-                localField: 'specializationId',
-                foreignField: '_id',
-                as: 'specializationData'
-              }
+                $lookup: {
+                    from: 'specialization',
+                    localField: 'specializationId',
+                    foreignField: '_id',
+                    as: 'specializationData'
+                }
             },
             {
                 $unwind: {
-                  path: '$specializationData',
-                  preserveNullAndEmptyArrays: true
+                    path: '$specializationData',
+                    preserveNullAndEmptyArrays: true
                 }
-              },
-              {
+            },
+            {
                 $project: {
-                  _id: 1,
-                  name: 1,
-                  age: 1,
-                  gender: 1,
-                  regno: 1,
-                  experience: 1,
-                  email: 1,
-                  password: 1,
-                  profileimg: 1,
-                  certificate: 1,
-                  fare: 1,
-                  status: 1,
-                  token: 1,
-                  approval: 1,
-                  specialization: {
-                    $ifNull: ['$specializationData.name', 'Unknown']
-                  }
+                    _id: 1,
+                    name: 1,
+                    age: 1,
+                    gender: 1,
+                    regno: 1,
+                    experience: 1,
+                    email: 1,
+                    password: 1,
+                    profileimg: 1,
+                    certificate: 1,
+                    fare: 1,
+                    status: 1,
+                    token: 1,
+                    approval: 1,
+                    specialization: {
+                        $ifNull: ['$specializationData.name', 'Unknown']
+                    }
                 }
-              }
-            
-            
-          ]);
+            }
+
+
+        ]);
         if (doctor) {
-            console.log(doctor,"doc data analysis");
-            res.status(200).json({doctor:doctor[0]});
-        }else{
-            res.status(404).json({message:"Cound not find doctor"})
+            console.log(doctor, "doc data analysis");
+            res.status(200).json({ doctor: doctor[0] });
+        } else {
+            res.status(404).json({ message: "Cound not find doctor" })
         }
     } catch (error) {
         console.log(error.message);
@@ -296,7 +296,7 @@ const addMoreData = async (req, res) => {
     console.log(req.body, "this is body");
     let amount = 0;
     try {
-        const { age, gender, regno, specialization, experience, docId,fare } = req.body
+        const { age, gender, regno, specialization, experience, docId, fare } = req.body
         if (fare) {
             const price = parseInt(fare);
             const percentage = 15;
@@ -329,32 +329,21 @@ const addMoreData = async (req, res) => {
 
 const setSchedule = async (req, res) => {
     try {
-        // const { selectedTimeSlots, selectedDays } = req.body;
-
-        // const schedule = new Schedule({
-        //     doc_id: req.params.doctorId,
-        //     schedule: selectedDays.map((day) => ({
-        //         day,
-        //         time: selectedTimeSlots.map((timeslot) => ({
-        //             timeslot,
-        //         })),
-        //     })),
-        // })
 
         const { schedule } = req.body;
 
         const newSchedule = new Schedule({
             doc_id: req.params.doctorId,
             schedule: schedule.map((day) => ({
-              day: day.day,
-              time: day.time.map((timeslot) => ({
-                timeslot: timeslot.timeslot,
-              })),
+                day: day.day,
+                time: day.time.map((timeslot) => ({
+                    timeslot: timeslot.timeslot,
+                })),
             })),
-          });
+        });
 
         const scheduleSave = await newSchedule.save()
-        console.log(scheduleSave,"SCHEDULE SAVE AAH");
+        console.log(scheduleSave, "SCHEDULE SAVE AAH");
         if (scheduleSave) {
             res.status(200).json({ message: "Saved Schedule", schedule: scheduleSave })
         } else {
@@ -363,6 +352,37 @@ const setSchedule = async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: "Internal server error" });
         console.log(error);
+    }
+}
+
+const updateSchedule = async (req, res) => {
+    try {
+
+        const { schedule } = req.body;
+        const updatedSchedule = await Schedule.findOneAndUpdate(
+            { doc_id: req.params.doctorId },
+            {
+                schedule: schedule.map((day) => ({
+                    day: day.day,
+                    time: day.time.map((timeslot) => ({
+                        timeslot: timeslot.timeslot,
+                    })),
+                })),
+            },
+            { new: true }
+        );
+
+
+        if (updateSchedule) {
+            res.status(200).json({ message:"Updated schedule successfully",schedule: updatedSchedule})
+        } else {
+            res.status(404).json({ message:"Cannot find the schedule" })
+        }
+
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ error: 'Error updating schedule' });
     }
 }
 
@@ -397,5 +417,6 @@ module.exports = {
     sendVerifyMail,
     addMoreData,
     setSchedule,
-    viewDocSchedule
+    viewDocSchedule,
+    updateSchedule
 }

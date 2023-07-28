@@ -2,6 +2,7 @@ const Admin = require('../Model/adminModel');
 const Users = require('../Model/userModel');
 const Doctors = require('../Model/doctorModel');
 const Bookings = require('../Model/bookingModel');
+const Spec = require('../Model/specializationModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
@@ -69,13 +70,29 @@ const findAdmin = async function (req, res) {
     try {
         const admin = await Admin.findById({ _id: req.params.adminId })
         if (admin) {
-            res.status(200).json({
-                _id: admin._id,
-                name: admin.name,
-                email: admin.email
-            })
+            const userCount = await Users.count()
+            const bookingCount = await Bookings.count()
+            const doctorCount = await Doctors.count()
+            const specCount = await Spec.count()
+            if (userCount && bookingCount && doctorCount && specCount) {
+
+                const dashData = {
+                    userCount,
+                    bookingCount,
+                    doctorCount,
+                    specCount
+                }
+
+                res.status(200).json({ message:'Admin dashboard data found',dashData })
+            } else {
+                res.status(404).json({ message:'Admin dashboard not found' })
+            }
+        } else {
+            res.status(404).json({ message:'Admin data not found' })
         }
+        
     } catch (error) {
+        res.status(500).json({ message: 'Internal server error' })
         console.log(error.message);
     }
 }

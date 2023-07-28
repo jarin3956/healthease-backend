@@ -80,6 +80,7 @@ const doctorRegister = async (req, res) => {
 
             })
             if (req.body.password === req.body.repassword) {
+
                 const doctorData = await doctor.save();
 
                 if (doctorData) {
@@ -281,7 +282,7 @@ const findDoctor = async (req, res) => {
 
         ]);
         if (doctor) {
-            console.log(doctor, "doc data analysis");
+            // console.log(doctor, "doc data analysis");
             res.status(200).json({ doctor: doctor[0] });
         } else {
             res.status(404).json({ message: "Cound not find doctor" })
@@ -293,7 +294,7 @@ const findDoctor = async (req, res) => {
 
 
 const addMoreData = async (req, res) => {
-    console.log(req.body, "this is body");
+    // console.log(req.body, "this is body");
     let amount = 0;
     try {
         const { age, gender, regno, specialization, experience, docId, fare } = req.body
@@ -342,13 +343,21 @@ const setSchedule = async (req, res) => {
             })),
         });
 
-        const scheduleSave = await newSchedule.save()
-        console.log(scheduleSave, "SCHEDULE SAVE AAH");
-        if (scheduleSave) {
-            res.status(200).json({ message: "Saved Schedule", schedule: scheduleSave })
+        const updateDoc = await Doctor.findByIdAndUpdate(req.params.doctorId, { scheduled: true });
+
+        if (updateDoc) {
+            const scheduleSave = await newSchedule.save()
+            // console.log(scheduleSave, "SCHEDULE SAVE AAH");
+            if (scheduleSave) {
+                res.status(200).json({ message: "Saved Schedule", schedule: scheduleSave })
+            } else {
+                res.status(500).json({ message: "Failed to save schedule" });
+            }
         } else {
-            res.status(500).json({ message: "Failed to save schedule" });
+            res.status(500).json({ message: "Failed to update schedule in doc profile" });
         }
+
+
     } catch (error) {
         res.status(500).json({ message: "Internal server error" });
         console.log(error);
@@ -374,9 +383,9 @@ const updateSchedule = async (req, res) => {
 
 
         if (updateSchedule) {
-            res.status(200).json({ message:"Updated schedule successfully",schedule: updatedSchedule})
+            res.status(200).json({ message: "Updated schedule successfully", schedule: updatedSchedule })
         } else {
-            res.status(404).json({ message:"Cannot find the schedule" })
+            res.status(404).json({ message: "Cannot find the schedule" })
         }
 
 
@@ -388,12 +397,11 @@ const updateSchedule = async (req, res) => {
 
 const viewDocSchedule = async (req, res) => {
     try {
-        console.log('hy');
         const schedule = await Schedule.findOne({
             doc_id: req.params.doctorId
         })
         if (schedule) {
-            console.log(schedule);
+            // console.log(schedule);
             res.status(200).json({ message: "Doctors Schedule found", schedule: schedule })
         } else {
             res.status(404).json({ message: "Cannot find doctors schedule" })

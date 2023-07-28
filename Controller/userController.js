@@ -281,12 +281,12 @@ const loadDoctors = async (req, res) => {
 
         const specialization = await Spec.findOne({ name: specialName })
 
-        const doctor = await Doctor.find({ specialization: specialization._id, approval: true  })
-        if (doctor) {
-            console.log(doctor, "ithann doc");
-            res.json({ status: 'ok', doctor: doctor })
+        const doctor = await Doctor.find({ specialization: specialization._id ,scheduled:true, approval: true  });
+        
+        if (doctor.length > 0) {
+            res.status(200).json({ message:'Doctors found', doctor: doctor })
         } else {
-            res.json({ status: 'error', message: 'No doctors found' })
+            res.status(404).json({ message: 'No doctors found' })
         }
     } catch (error) {
         console.log(error);

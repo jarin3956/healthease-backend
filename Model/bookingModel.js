@@ -11,6 +11,7 @@ const BookingSchema = new mongoose.Schema({
     Payment_create_time:{ type:Date , required:true },
     Payment_update_time:{ type:Date , required:true },
     Status: { type: String , default:'PENDING'},
+    Payment_type: { type: String ,required:true },
     CreatedAt: { type : Date , default:Date.now }
 }, { collection: 'bookings' });
 

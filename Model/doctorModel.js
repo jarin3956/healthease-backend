@@ -16,7 +16,8 @@ const DoctorSchema = new mongoose.Schema({
     status: { type: Boolean, default: false },
     token : {type: String , default:''},
     approval: {type: Boolean , default:false},
-    CreatedAt: { type : Date , default:Date.now }
+    scheduled: {type: Boolean , default: false},
+    createdAt: { type : Date , default:Date.now }
 }, { collection: 'doctors' });
 
 const DoctorModel = mongoose.model('Doctor', DoctorSchema);

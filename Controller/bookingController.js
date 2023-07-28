@@ -81,7 +81,7 @@ const checDocAvailability = async (req, res) => {
             if (dayToUpdate) {
                 const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime)
                 if (timeSlotToUpdate) {
-                    console.log(timeSlotToUpdate, "ithano mone prashnam");
+                    // console.log(timeSlotToUpdate, "ithano mone prashnam");
                     if (timeSlotToUpdate.isAvailable) {
                         res.status(200).json({ message: "The is okay for booking" });
                     } else {
@@ -103,12 +103,29 @@ const checDocAvailability = async (req, res) => {
     }
 }
 
+const loadUserWallet = async (req, res) => {
+    try {
+        const userId = req.params.userId
+
+        const user = await User.findById(userId)
+
+        if (user) {
+            res.status(200).json({ message: 'User wallet found', wallet: user.wallet })
+        } else {
+            res.status(404).json({ message: 'User not found' })
+        }
+
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error, please try after sometime' })
+    }
+}
+
 const bookConsultation = async (req, res) => {
     try {
 
         const { selectedDay, selectedTime, selectedDate, docId, final_fare, payment_create_time, payment_update_time, payment_id } = req.body.paymentData;
         const userId = req.params.userId
-
+        const paymentType = 'paypal'
         const booking = new Bookings({
             DocId: docId,
             UserId: userId,
@@ -118,7 +135,8 @@ const bookConsultation = async (req, res) => {
             Fare: final_fare,
             Payment_id: payment_id,
             Payment_create_time: payment_create_time,
-            Payment_update_time: payment_update_time
+            Payment_update_time: payment_update_time,
+            Payment_type: paymentType
         })
 
 
@@ -165,6 +183,85 @@ const bookConsultation = async (req, res) => {
     }
 }
 
+const walletBookConsultation = async (req, res) => {
+    const generateRandomNumber = () => {
+        const min = 1000000000000000;
+        const max = 9999999999999999;
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+
+    try {
+        const { selectedDay, selectedTime, selectedDate, docId, final_fare } = req.body.bookingData;
+        const userId = req.params.userId
+        const paymentType = 'wallet'
+        const booking = new Bookings({
+            DocId: docId,
+            UserId: userId,
+            Booked_date: selectedDate,
+            Booked_day: selectedDay,
+            Booked_timeSlot: selectedTime,
+            Fare: final_fare,
+            Payment_id: '',
+            Payment_create_time: Date.now(),
+            Payment_update_time: Date.now(),
+            Payment_type: paymentType
+        });
+
+        const user = await User.findById(userId)
+        const newBalance = user.wallet - final_fare
+        user.wallet = newBalance
+        const walletUpdate = user.save()
+        if (walletUpdate) {
+            const paymentId = generateRandomNumber();
+
+            booking.Payment_id = paymentId;
+
+            const schedule = await Schedule.findOne({ doc_id: docId })
+
+            if (schedule) {
+                const dayToUpdate = schedule.schedule.find(day => day.day === selectedDay);
+                if (dayToUpdate) {
+                    const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime);
+                    if (timeSlotToUpdate) {
+
+                        if (timeSlotToUpdate.isAvailable) {
+                            timeSlotToUpdate.isAvailable = false;
+                            const scheduleSave = await schedule.save();
+                            if (scheduleSave) {
+                                const booked = booking.save();
+                                if (booked) {
+                                    res.status(200).json({ message: "Booking Saved Successfully", bookingData: booking });
+                                } else {
+                                    res.status(500).json({ message: "Failed to save bookings" });
+                                }
+                            } else {
+                                res.status(500).json({ message: "Failed to update doctors slot" });
+                            }
+                        } else {
+                            booking.Status = 'FAILED';
+                            const booked = booking.save()
+                            res.status(409).json({ message: "The selected time slot is already booked." });
+                        }
+                    } else {
+                        res.status(500).json({ message: "Failed to save bookings" });
+                    }
+
+                } else {
+                    res.status(500).json({ message: "Failed to save bookings" });
+                }
+            } else {
+                res.status(500).json({ message: "Failed to save bookings" });
+            }
+        } else {
+            res.status(500).json({ message: "Failed to find and update wallet" });
+
+        }
+
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 const loadDoctorBooking = async (req, res) => {
     try {
         const { doctorId } = req.params;
@@ -173,17 +270,17 @@ const loadDoctorBooking = async (req, res) => {
             return res.status(404).json({ message: 'Doctor bookings not found' });
         }
 
-        // Get all the unique UserIds from the bookings
+
         const userIds = [...new Set(booking.map((booking) => booking.UserId))];
 
-        // Fetch user data for each UserId
+
         const users = await User.find({ _id: { $in: userIds } }).lean().exec();
 
-        // Map user data to the corresponding booking by matching UserId
+
         const bookingDataWithUserData = booking.map((booking) => {
             const user = users.find((user) => user._id.toString() === booking.UserId);
             return {
-                bookingData:booking,
+                bookingData: booking,
                 userData: user
             };
         });
@@ -196,18 +293,20 @@ const loadDoctorBooking = async (req, res) => {
     }
 }
 
-const loadUserBooking = async (req,res) => {
+const loadUserBooking = async (req, res) => {
     try {
 
-        const {userId } = req.params
-        const booking = await Bookings.find({ UserId:userId })
+        const { userId } = req.params
+        const booking = await Bookings.find({ UserId: userId })
         if (booking.length === 0) {
-            return res.status(404).json({ message:'User booking not found' })
+            return res.status(404).json({ message: 'User booking not found' })
         }
 
-        const doctorIds = [...new Set(booking.map((booking) => booking.DocId ))];
+        const doctorIds = [...new Set(booking.map((booking) => booking.DocId))];
 
-        const doctors = await Doctor.find({ _id : { $in: doctorIds }}).lean().exec();
+        const doctors = await Doctor.find({ _id: { $in: doctorIds } }).lean().exec();
+
+
 
         const bookingDataWithDoctorData = booking.map((booking) => {
             const doctor = doctors.find((doctor) => doctor._id.toString() === booking.DocId);
@@ -216,14 +315,14 @@ const loadUserBooking = async (req,res) => {
                 doctorData: doctor
             }
         })
-        
-        res.status(200).json({ message:"User booking Found",bookingData:bookingDataWithDoctorData })
-        
-        
+
+        res.status(200).json({ message: "User booking Found", bookingData: bookingDataWithDoctorData })
+
+
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: 'Internal server error' });
-        
+
     }
 }
 
@@ -262,5 +361,7 @@ module.exports = {
     checDocAvailability,
     loadDoctorBooking,
     cancelBooking,
-    loadUserBooking
+    loadUserBooking,
+    loadUserWallet,
+    walletBookConsultation
 }

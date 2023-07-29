@@ -158,6 +158,7 @@ const loadDoctors = async function (req, res) {
                 status: 1,
                 token: 1,
                 approval: 1,
+                isBlocked: 1,
                 specialization: {
                   $ifNull: ['$specializationData.name', 'Unknown']
                 }
@@ -185,7 +186,7 @@ const changeUserStatus = async function (req, res) {
         if (!user) {
             return res.status(404).json({ message: "User not found" })
         }
-        user.status = !user.status
+        user.isBlocked = !user.isBlocked
         await user.save();
         res.status(200).json({ message: 'Successfully Changed', user: user })
 
@@ -237,6 +238,29 @@ const changeDoctorStatus = async function (req, res) {
             });
     
 
+        }
+        await doctor.save();
+        return res.status(200).json({ message: 'Changed Successfully',doctor:doctor });
+
+
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' });
+        console.log(error);
+    }
+}
+
+
+const handleBlocking = async (req,res) => {
+    try {
+        const { doctorId } = req.params;
+        const doctor = await Doctors.findById(doctorId)
+        if (!doctor) {
+            return res.status(404).json({ message: "Doctor not found" })
+        }
+        if (doctor.isBlocked === true) {
+            doctor.isBlocked = false
+        } else {
+            doctor.isBlocked = true
         }
         await doctor.save();
         return res.status(200).json({ message: 'Changed Successfully',doctor:doctor });
@@ -340,6 +364,63 @@ const loadUserProfile = async (req,res) => {
     }
 }
 
+const loadChartData = async (req,res) => {
+    try {
+        const userResults = await Users.aggregate([
+            {
+              $facet: {
+                usersData: [ { $match: {} } ], 
+              },
+            },
+            {
+              $project: {
+                usersData: { createdAt: 1 },
+              },
+            },
+          ]);
+
+          const doctorResult = await Doctors.aggregate([
+            {
+                $facet:{
+                    doctorsData: [ { $match: {} } ],
+                    doctorsCount:[ { $count:'count' } ],
+                }
+            },
+            {
+                $project:{
+                    doctorsData: { createdAt: 1 }, 
+                    doctorsCount: { $arrayElemAt: ['$doctorsCount.count', 0] },
+                }
+            }
+          ]);
+      
+          const usersData = userResults[0].usersData;
+        //   const usersCount = userResults[0].usersCount;
+          const doctorsData = doctorResult[0].doctorsData;
+        //   const doctorsCount = doctorResult[0].doctorsCount;
+          
+          const chartData = {
+            usersData,
+            doctorsData,
+          }
+
+        
+        
+
+        console.log(chartData,"this is the chart data");
+          
+
+        if (chartData) {
+            res.status(200).json({message:"Chart data found",chartData})
+        } else {
+            res.status(404).status({message:"Chart data not found"})
+        }
+
+
+    } catch (error) {
+        
+    }
+}
 
 
 
@@ -357,5 +438,7 @@ module.exports = {
     changeDoctorStatus,
     loadBooking,
     loadDoctorProfile,
-    loadUserProfile
+    loadUserProfile,
+    loadChartData,
+    handleBlocking
 }

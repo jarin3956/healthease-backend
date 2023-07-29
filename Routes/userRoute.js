@@ -17,6 +17,7 @@ user_route.post('/resend-otp',userController.resendOtp);
 user_route.get('/specialization',userController.viewSpec);
 user_route.get('/view-doctors-spec/:specialName',userController.loadDoctors);
 user_route.get('/view-doctor-slots/:docId',userController.viewDocSlot);
+user_route.get('/view-specialization',userVerify,userController.loadDocSpec)
 
 
 

@@ -202,6 +202,11 @@ const doctorLogin = async (req, res) => {
         const doctor = await Doctor.findOne({ email: email })
 
         if (doctor) {
+
+            if (doctor.isBlocked === true) {
+                return res.json({ status: 'error', message: 'You are blocked by admin' })
+            }
+
             if (doctor.status === true) {
                 const passwordMatch = await bcrypt.compare(password, doctor.password);
                 if (passwordMatch) {

@@ -168,6 +168,11 @@ const userLogin = async (req, res) => {
         const email = req.body.email
         const password = req.body.password
         const user = await User.findOne({ email: email })
+
+        if (user.isBlocked === true) {
+            return res.json( { status: 'error', message: "You are blocked by admin" } )
+        }
+
         if (user && user.status === true) {
             const passwordMatch = await bcrypt.compare(password, user.password);
             if (passwordMatch) {
@@ -180,7 +185,7 @@ const userLogin = async (req, res) => {
             if (!user) {
                 return res.json({ status: 'error', message: "User not found" })
             } else {
-                return res.json({ status: 'error', message: 'User not verified or blocked' })
+                return res.json({ status: 'error', message: 'User not verified ' })
             }
 
         }
@@ -308,52 +313,22 @@ const viewDocSlot = async (req, res) => {
     }
 }
 
-// const bookConsultation = async (req, res) => {
-//     let amount = 0;
-//     try {
-//         const { docId, selectedDay, selectedTime,selectedDate } = req.body.bookingData
-//         const userId = req.params.userId
-//         // console.log(userId, "book token");
-//         // console.log(docId, selectedDay, selectedTime, "next");
 
-//         const doctor = await Doctor.findById(docId)
-//         // console.log(doctor, "doc undo");
-//         if (doctor) {
-//             const price = doctor.fare;
-//             const percentage = 15;
-//             const percentageAmount = (percentage / 100) * price;
-//             amount = price + percentageAmount;
-//         }
-//         const booking = new Booking({
-//             DocId: docId,
-//             UserId: userId,
-//             Date: selectedDate,
-//             Day: selectedDay,
-//             TimeSlot: selectedTime,
-//             Fare: amount
-//         })
-//         const booked = booking.save()
-//         if (booked) {
-//             const schedule = await Schedule.findOne({ doc_id: docId })
-//             if (schedule) {
-//                 const dayToUpdate = schedule.schedule.find(day => day.day === selectedDay);
-//                 if (dayToUpdate) {
-//                     const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime)
-//                     if (timeSlotToUpdate) {
-//                         timeSlotToUpdate.isAvailable = false;
-//                         await schedule.save();
-//                         res.status(200).json({ message: "Bookings Saved Successfully" })
-//                     } else {
-//                         res.status(500).json({ message: "Failed to save bookings" });
-//                     }
-//                 }
-//             }
-//         }
+const loadDocSpec = async (req,res) => {
+    try {
+        let specData = await Spec.find({ status: true })
+        if (specData) {
+            res.status(200).json({ spec: specData });
+        } else {
+            res.status(404).json({ message: 'No data found' });
+        }
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
 
-//     } catch (error) {
-//         console.log(error);
-//     }
-// }
+
 
 
 
@@ -369,4 +344,5 @@ module.exports = {
     viewSpec,
     loadDoctors,
     viewDocSlot,
+    loadDocSpec
 }

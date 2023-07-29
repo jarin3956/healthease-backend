@@ -17,6 +17,10 @@ const userVerify = async (req, res, next) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    if (user.isBlocked === true) {
+      return res.json({ error: 'User Blocked' });
+    }
+
     req.params = decoded; 
     next(); 
   } catch (error) {

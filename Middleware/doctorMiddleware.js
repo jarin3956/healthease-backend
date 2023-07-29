@@ -16,6 +16,10 @@ const doctorVerify = async (req, res, next) => {
       return res.status(404).json({ error: 'Doctor not found' });
     }
 
+    if (doctor.isBlocked === true) {
+      return res.json({ error: 'Doctor Blocked' });
+    }
+
     req.params = decoded; 
     next(); 
   } catch (error) {

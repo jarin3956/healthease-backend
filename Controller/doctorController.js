@@ -294,6 +294,7 @@ const findDoctor = async (req, res) => {
         }
     } catch (error) {
         console.log(error.message);
+        res.status(500).json({ message: 'Internal server error' });
     }
 }
 
@@ -417,6 +418,58 @@ const viewDocSchedule = async (req, res) => {
     }
 }
 
+const loadDocEdit = async (req,res) => {
+    try {
+
+        const docId = req.params.doctorId
+        let doctor = await Doctor.findById(docId);
+        if (doctor) {
+            if (req.body.name) {
+                doctor.name = req.body.name
+            }
+            if (req.body.age) {
+                doctor.age = req.body.age
+            }
+            if (req.body.regno) {
+                doctor.regno = req.body.regno
+            }
+            if (req.body.experience) {
+                doctor.experience = req.body.experience
+            }
+            if (req.body.fare) {
+                doctor.fare = req.body.fare
+            }
+            if (req.body.gender) {
+                doctor.gender = req.body.gender
+            }
+            if (req.body.specialization) {
+                doctor.specialization = req.body.specialization
+            }
+            if (req.files && req.files.profileimg && req.files.profileimg[0]) {
+                doctor.profileimg = req.files.profileimg[0].filename;
+              }
+              if (req.files && req.files.certificate && req.files.certificate[0]) {
+                doctor.certificate = req.files.certificate[0].filename;
+              }
+              doctor.approval = false
+            let docSave = await doctor.save()
+            if (docSave) {
+                res.status(200).json({message:'Successfully saved doctor'})
+            } else {
+                res.status(500).json({message:'Cannot save doctor'})
+            }
+            
+        } else {
+            res.status(404).json({message:'Doctor not found'})
+        }
+        
+        
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({message:'Internal server error'})
+    }
+}
+
 
 
 
@@ -431,5 +484,6 @@ module.exports = {
     addMoreData,
     setSchedule,
     viewDocSchedule,
-    updateSchedule
+    updateSchedule,
+    loadDocEdit
 }

@@ -169,11 +169,12 @@ const userLogin = async (req, res) => {
         const password = req.body.password
         const user = await User.findOne({ email: email })
 
-        if (user.isBlocked === true) {
-            return res.json( { status: 'error', message: "You are blocked by admin" } )
-        }
+        
 
         if (user && user.status === true) {
+            if (user.isBlocked === true) {
+                return res.json( { status: 'error', message: "You are blocked by admin" } )
+            }
             const passwordMatch = await bcrypt.compare(password, user.password);
             if (passwordMatch) {
                 const token = jwt.sign({ userId: user._id }, process.env.USER_SECRET);

@@ -13,7 +13,7 @@ const doctorVerify = async (req, res, next) => {
 
     const doctor = await Doctor.findById(decoded.doctorId);
     if (!doctor) {
-      return res.status(404).json({ error: 'Doctor not found' });
+      return res.status(403).json({ error: 'Forbidden' });
     }
 
     if (doctor.isBlocked === true) {

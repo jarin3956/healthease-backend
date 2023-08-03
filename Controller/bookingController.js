@@ -110,7 +110,20 @@ const loadUserWallet = async (req, res) => {
         const user = await User.findById(userId)
 
         if (user) {
-            res.status(200).json({ message: 'User wallet found', wallet: user.wallet })
+
+            let walletBalance = 0;
+            
+            for (const transaction of user.wallet) {
+                if (transaction.type === 'C') {
+                    walletBalance += transaction.amount; // Credit
+                } else if (transaction.type === 'D') {
+                    walletBalance -= transaction.amount; // Debit
+                }
+            }
+
+            res.status(200).json({ message: 'User wallet found', wallet: walletBalance });
+
+            // res.status(200).json({ message: 'User wallet found', wallet: user.wallet })
         } else {
             res.status(404).json({ message: 'User not found' })
         }
@@ -208,8 +221,14 @@ const walletBookConsultation = async (req, res) => {
         });
 
         const user = await User.findById(userId)
-        const newBalance = user.wallet - final_fare
-        user.wallet = newBalance
+        // const newBalance = user.wallet - final_fare
+        // user.wallet = newBalance
+        user.wallet.push({
+            amount: final_fare, // Negative value indicates debit
+            timestamp: new Date(),
+            type: 'D' // Debit
+        });
+
         const walletUpdate = user.save()
         if (walletUpdate) {
             const paymentId = generateRandomNumber();
@@ -265,7 +284,7 @@ const walletBookConsultation = async (req, res) => {
 const loadDoctorBooking = async (req, res) => {
     try {
         const { doctorId } = req.params;
-        const booking = await Bookings.find({ DocId: doctorId })
+        const booking = await Bookings.find({ DocId: doctorId }).sort({ CreatedAt: -1 });
         if (booking.length === 0) {
             return res.status(404).json({ message: 'Doctor bookings not found' });
         }
@@ -297,7 +316,7 @@ const loadUserBooking = async (req, res) => {
     try {
 
         const { userId } = req.params
-        const booking = await Bookings.find({ UserId: userId })
+        const booking = await Bookings.find({ UserId: userId }).sort({ CreatedAt: -1 });
         if (booking.length === 0) {
             return res.status(404).json({ message: 'User booking not found' })
         }
@@ -331,7 +350,15 @@ const cancelBooking = async (req, res) => {
         const bookingId = req.params.bookingId;
         const booking = await Bookings.findById(bookingId)
         if (booking) {
-            const user = await User.findByIdAndUpdate(booking.UserId, { $inc: { wallet: booking.Fare } })
+            // const user = await User.findByIdAndUpdate(booking.UserId, { $inc: { wallet: booking.Fare } })
+            const user = await User.findByIdAndUpdate(booking.UserId, {
+                $push: {
+                    wallet: {
+                        amount: booking.Fare,
+                        type: 'C', 
+                    },
+                },
+            });
 
             if (user) {
                 booking.Status = 'CANCELLED'

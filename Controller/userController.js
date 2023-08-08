@@ -115,7 +115,7 @@ const userRegister = async (req, res) => {
 
 
 const resendOtp = async (req, res) => {
-    
+
     try {
         const userId = req.body.userId
         let user = await User.findById(userId)
@@ -169,11 +169,11 @@ const userLogin = async (req, res) => {
         const password = req.body.password
         const user = await User.findOne({ email: email })
 
-        
 
-        if (user && user.status === true) {
+
+        if (user && user.status === true && user.password ) {
             if (user.isBlocked === true) {
-                return res.json( { status: 'error', message: "You are blocked by admin" } )
+                return res.json({ status: 'error', message: "You are blocked by admin" })
             }
             const passwordMatch = await bcrypt.compare(password, user.password);
             if (passwordMatch) {
@@ -256,7 +256,7 @@ const profileEdit = async function (req, res) {
             }
 
             await user.save();
-           
+
             res.json({ status: 'ok', updateduser: user });
         } else {
             res.json({ status: 'error', message: 'Cannot find user' });
@@ -270,7 +270,7 @@ const viewSpec = async (req, res) => {
     try {
         const specData = await Spec.find({})
         if (specData) {
-            
+
             res.json({ status: 'ok', spec: specData });
         } else {
             res.json({ status: 'error', message: 'Cannot find specialization' });
@@ -287,10 +287,10 @@ const loadDoctors = async (req, res) => {
 
         const specialization = await Spec.findOne({ name: specialName })
 
-        const doctor = await Doctor.find({ specialization: specialization._id ,scheduled:true, approval: true  });
-        
+        const doctor = await Doctor.find({ specialization: specialization._id, scheduled: true, approval: true });
+
         if (doctor.length > 0) {
-            res.status(200).json({ message:'Doctors found', doctor: doctor })
+            res.status(200).json({ message: 'Doctors found', doctor: doctor })
         } else {
             res.status(404).json({ message: 'No doctors found' })
         }
@@ -315,7 +315,7 @@ const viewDocSlot = async (req, res) => {
 }
 
 
-const loadDocSpec = async (req,res) => {
+const loadDocSpec = async (req, res) => {
     try {
         let specData = await Spec.find({ status: true })
         if (specData) {
@@ -326,6 +326,55 @@ const loadDocSpec = async (req,res) => {
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
+
+const loadGoogleLogin = async (req, res) => {
+    try {
+        const data = req.body.user
+        // console.log(data, 'google auth data for back');
+        if (data) {
+            const userfind = await User.findOne({ email: data.email })
+            if (!userfind) {
+                const user = new User({
+                    name: data.given_name,
+                    email: data.email,
+                    image: data.picture,
+                    status: true
+                })
+                const userData = await user.save();
+                if (userData) {
+                    const token = jwt.sign({ userId: user._id }, process.env.USER_SECRET);
+                    // console.log(token, "google auth token");
+                    if (token) {
+                        res.status(200).json({ message: 'google auth user created', user: token })
+                    } else {
+                        res.status(500).json({ message: 'Cannot generate token' })
+                    }
+                } else {
+                    res.status(500).json({ message: 'Cannot save data, please try after sometime' })
+                }
+
+            } else {
+                if (userfind.isBlocked === true) {
+                    return res.status(403).json({ message: "You are blocked by admin" })
+                }
+                const token = jwt.sign({ userId: userfind._id }, process.env.USER_SECRET);
+                // console.log(token, "google auth token");
+                if (token) {
+                    res.status(200).json({ message: 'google auth user created', user: token })
+                } else {
+                    res.status(500).json({ message: 'Cannot generate token' })
+                }
+            }
+        } else {
+            res.status(500).json({ message: 'No login data found' })
+        }
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Cannot process now, please try after some time' })
     }
 }
 
@@ -345,5 +394,6 @@ module.exports = {
     viewSpec,
     loadDoctors,
     viewDocSlot,
-    loadDocSpec
+    loadDocSpec,
+    loadGoogleLogin
 }

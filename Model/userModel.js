@@ -7,7 +7,7 @@ const UserSchema = new mongoose.Schema({
     weight : { type : Number },
     gender : { type : String }, 
     email : { type : String, required : true, unique: true },
-    password : { type : String, required : true },
+    password : { type : String },
     image : { type : String, required : true },
     wallet: [
         {

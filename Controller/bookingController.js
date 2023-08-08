@@ -335,6 +335,8 @@ const loadUserBooking = async (req, res) => {
             }
         })
 
+        // console.log('kennnnnnnnnnnnn',bookingDataWithDoctorData);
+
         res.status(200).json({ message: "User booking Found", bookingData: bookingDataWithDoctorData })
 
 

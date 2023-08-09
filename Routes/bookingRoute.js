@@ -10,8 +10,10 @@ booking_route.post('/wallet-booking-data',userVerify,bookingController.walletBoo
 booking_route.post('/check-doc-availability',bookingController.checDocAvailability);
 booking_route.get('/load-doc-bookings',doctorVerify,bookingController.loadDoctorBooking);
 booking_route.get('/load-user-bookings',userVerify,bookingController.loadUserBooking);
-booking_route.put('/cancel-booking/:bookingId',bookingController.cancelBooking);
-booking_route.get('/check-wallet',userVerify,bookingController.loadUserWallet)
+booking_route.put('/cancel-booking-user/:bookingId',bookingController.cancelBooking);
+booking_route.put('/cancel-booking-doctor/:bookingId',bookingController.cancelBooking);
+booking_route.get('/check-wallet',userVerify,bookingController.loadUserWallet);
+
 
 
 module.exports = booking_route;

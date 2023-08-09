@@ -98,18 +98,18 @@ const userRegister = async (req, res) => {
                     setTimeout(async () => {
                         await User.findByIdAndUpdate(userData.id, { token: '' });
                     }, 60000);
-                    res.json({ status: 'ok', id: user._id });
+                    res.status(200).json({ id: user._id });
                 } else {
-                    res.json({ status: 'error', message: 'Failed to save' })
+                    res.status(500).json({ message: 'Failed to save' })
                 }
             } else {
-                res.json({ status: 'error', message: 'Password do not match' });
+                res.status(401).json({ message: 'Password do not match' });
             }
         } else {
-            res.json({ status: 'error', message: 'Email already used' })
+            res.status(409).json({ message: 'Email already used' })
         }
     } catch (error) {
-        res.json({ status: 'error', message: 'An error occurred during registration' })
+        res.status(500).json({ message: 'An error occurred during registration' })
     }
 }
 
@@ -169,34 +169,38 @@ const userLogin = async (req, res) => {
         const password = req.body.password
         const user = await User.findOne({ email: email })
 
-
-
-        if (user && user.status === true && user.password ) {
+        if (user && user.status === true && user.password) {
             if (user.isBlocked === true) {
-                return res.json({ status: 'error', message: "You are blocked by admin" })
+                return res.status(403).json({ message: "You are blocked by the admin" })
             }
             const passwordMatch = await bcrypt.compare(password, user.password);
             if (passwordMatch) {
-                const token = jwt.sign({ userId: user._id }, process.env.USER_SECRET);
-                return res.json({ status: 'ok', user: token })
+                const role = 'user';
+                const token = jwt.sign({ userId: user._id, role: role }, process.env.USER_SECRET);
+                res.status(200).json({ user: token })
             } else {
-                return res.json({ status: 'error', message: "Password do not match" })
+                res.status(401).json({ message: "Password do not match" })
             }
         } else {
             if (!user) {
-                return res.json({ status: 'error', message: "User not found" })
-            } else {
-                return res.json({ status: 'error', message: 'User not verified ' })
+                res.status(404).json({ message: "User not found" })
+            } else if (!user.password) {
+                res.status(500).json({ message: 'You might be registered with google auth' })
+            }
+            else {
+                res.status(401).json({ message: 'User not verified ' })
             }
 
         }
     } catch (error) {
         console.log(error.message);
+        res.status(500).json({ message: 'Internal server error, please try after sometime' })
     }
 }
 
 const findUser = async function (req, res) {
     try {
+
         const user = await User.findById({ _id: req.params.userId });
         if (user) {
             res.status(200).json({
@@ -208,30 +212,37 @@ const findUser = async function (req, res) {
                 gender: user.gender,
                 height: user.height,
                 weight: user.weight,
-                wallet: user.wallet
+                wallet: user.wallet,
+                picture: user.picture
             });
+        } else {
+            res.status(404).json({ message: 'User not found' })
         }
     } catch (error) {
-        console.log(error.message);
+        res.status(500).json({ message: 'Internal server error, Please try after sometime' })
+        console.log(error);
     }
 }
 
-const addMoreData = async function (req, res) {
+const addMoreData = async (req, res) => {
     try {
         const { age, gender, height, weight } = req.body;
         const userId = req.params.userId;
         const user = await User.findByIdAndUpdate(userId,
             { age, gender, height, weight }, { new: true })
-        if (!user) {
-            res.json({ status: 'error', message: 'User not found' })
+        if (user) {
+            res.status(200).json({ user: user })
+        } else {
+            res.status(404).json({ message: 'User not found' })
         }
-        res.json({ status: 'ok', user: user })
+
     } catch (error) {
-        res.json({ status: 'error', message: 'Cannot update now' })
+        res.status(500).json({ message: 'Internal server error, Please try after sometime' })
     }
 }
 
-const profileEdit = async function (req, res) {
+const profileEdit = async (req, res) => {
+    // console.log(req.body, "edit profile body");
     try {
         const { userId } = req.params;
         let user = await User.findById(userId);
@@ -255,30 +266,34 @@ const profileEdit = async function (req, res) {
                 user.gender = req.body.gender;
             }
 
-            await user.save();
-
-            res.json({ status: 'ok', updateduser: user });
+           const usersave = await user.save();
+           if (usersave) {
+            res.status(200).json({ updateduser: user });
+           } else {
+            res.status(500).json({message: 'Cannot save data, Please try after sometime'});
+           }
         } else {
-            res.json({ status: 'error', message: 'Cannot find user' });
+            res.status(404).json({ message: 'Cannot find user' });
         }
     } catch (error) {
-        res.json({ status: 'error', message: 'Cannot save data' });
+        res.status(500).json({ message: 'Internal server error, Please try after sometime' });
     }
 };
 
-const viewSpec = async (req, res) => {
-    try {
-        const specData = await Spec.find({})
-        if (specData) {
 
-            res.json({ status: 'ok', spec: specData });
-        } else {
-            res.json({ status: 'error', message: 'Cannot find specialization' });
-        }
-    } catch (error) {
-        console.log(error);
-    }
-}
+// const viewSpec = async (req, res) => {
+//     try {
+//         const specData = await Spec.find({})
+//         if (specData) {
+
+//             res.json({ status: 'ok', spec: specData });
+//         } else {
+//             res.json({ status: 'error', message: 'Cannot find specialization' });
+//         }
+//     } catch (error) {
+//         console.log(error);
+//     }
+// }
 
 const loadDoctors = async (req, res) => {
 
@@ -295,7 +310,7 @@ const loadDoctors = async (req, res) => {
             res.status(404).json({ message: 'No doctors found' })
         }
     } catch (error) {
-        console.log(error);
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
     }
 }
 
@@ -310,6 +325,7 @@ const viewDocSlot = async (req, res) => {
             res.status(404).json({ message: "Schedule not found" })
         }
     } catch (error) {
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
         console.log(error.message);
     }
 }
@@ -325,7 +341,7 @@ const loadDocSpec = async (req, res) => {
         }
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
     }
 }
 
@@ -340,12 +356,13 @@ const loadGoogleLogin = async (req, res) => {
                 const user = new User({
                     name: data.given_name,
                     email: data.email,
-                    image: data.picture,
+                    picture: data.picture,
                     status: true
                 })
                 const userData = await user.save();
                 if (userData) {
-                    const token = jwt.sign({ userId: user._id }, process.env.USER_SECRET);
+                    const role = 'user';
+                    const token = jwt.sign({ userId: user._id, role: role }, process.env.USER_SECRET);
                     // console.log(token, "google auth token");
                     if (token) {
                         res.status(200).json({ message: 'google auth user created', user: token })
@@ -360,7 +377,8 @@ const loadGoogleLogin = async (req, res) => {
                 if (userfind.isBlocked === true) {
                     return res.status(403).json({ message: "You are blocked by admin" })
                 }
-                const token = jwt.sign({ userId: userfind._id }, process.env.USER_SECRET);
+                const role = 'user';
+                const token = jwt.sign({ userId: userfind._id, role: role }, process.env.USER_SECRET);
                 // console.log(token, "google auth token");
                 if (token) {
                     res.status(200).json({ message: 'google auth user created', user: token })
@@ -391,7 +409,7 @@ module.exports = {
     verifyLogin,
     addMoreData,
     profileEdit,
-    viewSpec,
+    // viewSpec,
     loadDoctors,
     viewDocSlot,
     loadDocSpec,

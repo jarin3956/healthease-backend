@@ -15,7 +15,8 @@ const adminverify = async (req, res, next) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
     
-    req.params = decoded; 
+    // req.params = decoded; 
+    req.decodedAdmin = decoded;
     next(); 
   } catch (error) {
     return res.status(401).json({ error: 'Invalid token' });

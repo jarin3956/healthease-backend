@@ -8,7 +8,8 @@ const UserSchema = new mongoose.Schema({
     gender : { type : String }, 
     email : { type : String, required : true, unique: true },
     password : { type : String },
-    image : { type : String, required : true },
+    image : { type : String },
+    picture : { type : String },
     wallet: [
         {
           amount: { type: Number, required: true },

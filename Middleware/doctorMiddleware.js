@@ -11,6 +11,12 @@ const doctorVerify = async (req, res, next) => {
   try {
     const decoded = jwt.verify(doctortoken, process.env.DOCTOR_SECRET);
 
+    const { role } = decoded;
+
+    if (role !=='doctor' ) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
     const doctor = await Doctor.findById(decoded.doctorId);
     if (!doctor) {
       return res.status(403).json({ error: 'Forbidden' });

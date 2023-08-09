@@ -50,26 +50,34 @@ const adminRegister = async function (req, res) {
 }
 
 const adminLogin = async (req, res) => {
-    const email = req.body.email
-    const password = req.body.password
-    const admin = await Admin.findOne({ email: email })
-    if (admin) {
-        const passwordMatch = await bcrypt.compare(password, admin.password)
-        if (passwordMatch) {
-            const role = 'admin';
-            const admintoken = jwt.sign({ adminId: admin._id , role: role }, process.env.ADMIN_SECRET)
-            return res.json({ status: 'ok', admin: admintoken })
+    try {
+        const email = req.body.email
+        const password = req.body.password
+        const admin = await Admin.findOne({ email: email })
+        if (admin) {
+            const passwordMatch = await bcrypt.compare(password, admin.password)
+            if (passwordMatch) {
+                const role = 'admin';
+                const admintoken = jwt.sign({ adminId: admin._id, role: role }, process.env.ADMIN_SECRET)
+                res.status(200).json({ admin: admintoken })
+            } else {
+                res.status(401).json({ message: "Password do not match" })
+            }
         } else {
-            return res.json({ status: 'error', message: "Password do not match" })
+            res.status(404).json({ message: 'No data found' })
         }
-    } else {
-        return res.json({ status: 'error', message: 'No data found' })
+    } catch (error) {
+        console.log(error.message);
+        res.status(500).json({ message: 'Internal server error, please try after sometime' })
     }
 }
 
 const findAdmin = async function (req, res) {
     try {
-        const admin = await Admin.findById({ _id: req.params.adminId })
+
+        const { adminId } = req.decodedAdmin
+
+        const admin = await Admin.findById({ _id: adminId })
         if (admin) {
             const userCount = await Users.count()
             const bookingCount = await Bookings.count()
@@ -84,14 +92,14 @@ const findAdmin = async function (req, res) {
                     specCount
                 }
 
-                res.status(200).json({ message:'Admin dashboard data found',dashData })
+                res.status(200).json({ message: 'Admin dashboard data found', dashData })
             } else {
-                res.status(404).json({ message:'Admin dashboard not found' })
+                res.status(404).json({ message: 'Admin dashboard not found' })
             }
         } else {
-            res.status(404).json({ message:'Admin data not found' })
+            res.status(404).json({ message: 'Admin data not found' })
         }
-        
+
     } catch (error) {
         res.status(500).json({ message: 'Internal server error' })
         console.log(error.message);
@@ -108,6 +116,7 @@ const loadUsers = async function (req, res) {
         }
     } catch (error) {
         console.log(error);
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
     }
 }
 
@@ -118,58 +127,56 @@ const loadDoctors = async function (req, res) {
         const doctorData = await Doctors.aggregate([
             {
                 $match: {
-                  specialization: { $regex: /^[0-9a-fA-F]{24}$/ }
+                    specialization: { $regex: /^[0-9a-fA-F]{24}$/ }
                 }
-              },
-            {
-              $addFields: {
-                specializationId: {
-                  $toObjectId: '$specialization'
-                }
-              }
             },
             {
-              $lookup: {
-                from: 'specialization',
-                localField: 'specializationId',
-                foreignField: '_id',
-                as: 'specializationData'
-              }
-            },
-            {
-              $unwind: {
-                path: '$specializationData',
-                preserveNullAndEmptyArrays: true
-              }
-            },
-            {
-              $project: {
-                _id: 1,
-                name: 1,
-                age: 1,
-                gender: 1,
-                regno: 1,
-                experience: 1,
-                email: 1,
-                password: 1,
-                profileimg: 1,
-                certificate: 1,
-                fare: 1,
-                final_fare: 1,
-                status: 1,
-                token: 1,
-                approval: 1,
-                isBlocked: 1,
-                specialization: {
-                  $ifNull: ['$specializationData.name', 'Unknown']
+                $addFields: {
+                    specializationId: {
+                        $toObjectId: '$specialization'
+                    }
                 }
-              }
+            },
+            {
+                $lookup: {
+                    from: 'specialization',
+                    localField: 'specializationId',
+                    foreignField: '_id',
+                    as: 'specializationData'
+                }
+            },
+            {
+                $unwind: {
+                    path: '$specializationData',
+                    preserveNullAndEmptyArrays: true
+                }
+            },
+            {
+                $project: {
+                    _id: 1,
+                    name: 1,
+                    age: 1,
+                    gender: 1,
+                    regno: 1,
+                    experience: 1,
+                    email: 1,
+                    password: 1,
+                    profileimg: 1,
+                    certificate: 1,
+                    fare: 1,
+                    final_fare: 1,
+                    status: 1,
+                    token: 1,
+                    approval: 1,
+                    isBlocked: 1,
+                    specialization: {
+                        $ifNull: ['$specializationData.name', 'Unknown']
+                    }
+                }
             }
-          ]);
-          
-          
-          
-    
+        ]);
+
+
         if (doctorData) {
             res.json({ doctors: doctorData })
         } else {
@@ -177,25 +184,34 @@ const loadDoctors = async function (req, res) {
         }
     } catch (error) {
         console.log(error);
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
     }
 }
+
+
 
 const changeUserStatus = async function (req, res) {
     try {
         const { userId } = req.params;
-        const user = await Users.findById(userId)
+
+        console.log(req.params, "the moongose user id");
+
+        const user = await Users.findById(userId);
         if (!user) {
-            return res.status(404).json({ message: "User not found" })
+            return res.status(404).json({ message: 'User not found' });
         }
-        user.isBlocked = !user.isBlocked
+
+        user.isBlocked = !user.isBlocked;
         await user.save();
-        res.status(200).json({ message: 'Successfully Changed', user: user })
+
+        return res.status(200).json({ message: 'Successfully Changed', user: user });
 
     } catch (error) {
+        console.error(error);
         res.status(500).json({ message: 'Internal server error' });
-        console.log(error);
     }
-}
+};
+
 
 const changeDoctorStatus = async function (req, res) {
     try {
@@ -217,9 +233,9 @@ const changeDoctorStatus = async function (req, res) {
                     user: process.env.EMAILID,
                     pass: process.env.EMAILPASS
                 }
-    
+
             });
-    
+
             const mailOptions = {
                 from: process.env.EMAILID,
                 to: doctor.email,
@@ -228,7 +244,7 @@ const changeDoctorStatus = async function (req, res) {
                        <p>You are successfull verified by admin</p>
                        <p>You can now login to your account</p>
                        <p>Wishing you a good luck.</p>`
-    
+
             }
             transporter.sendMail(mailOptions, function (error, info) {
                 if (error) {
@@ -237,11 +253,11 @@ const changeDoctorStatus = async function (req, res) {
                     console.log("Doctor welcome mail has been send:- ", info.response);
                 }
             });
-    
+
 
         }
         await doctor.save();
-        return res.status(200).json({ message: 'Changed Successfully',doctor:doctor });
+        return res.status(200).json({ message: 'Changed Successfully', doctor: doctor });
 
 
     } catch (error) {
@@ -251,7 +267,7 @@ const changeDoctorStatus = async function (req, res) {
 }
 
 
-const handleBlocking = async (req,res) => {
+const handleBlocking = async (req, res) => {
     try {
         const { doctorId } = req.params;
         const doctor = await Doctors.findById(doctorId)
@@ -264,7 +280,7 @@ const handleBlocking = async (req,res) => {
             doctor.isBlocked = true
         }
         await doctor.save();
-        return res.status(200).json({ message: 'Changed Successfully',doctor:doctor });
+        return res.status(200).json({ message: 'Changed Successfully', doctor: doctor });
 
 
     } catch (error) {
@@ -273,153 +289,157 @@ const handleBlocking = async (req,res) => {
     }
 }
 
-const loadBooking = async (req,res) =>{
+const loadBooking = async (req, res) => {
+
     try {
+        // console.log(req.decodedAdmin,"admin token id");
         const bookings = await Bookings.find({})
         if (bookings) {
-            res.status(200).json({ message:"Bookings found",bookingData:bookings })
+            res.status(200).json({ message: "Bookings found", bookingData: bookings })
         } else {
-            res.status(404).json({ message:"Bookings not found" })
+            res.status(404).json({ message: "Bookings not found" })
         }
     } catch (error) {
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
         console.log(error);
     }
 }
 
-const loadDoctorProfile = async (req,res) => {
+const loadDoctorProfile = async (req, res) => {
     try {
 
         const newid = new mongoose.Types.ObjectId(req.params.doctorId)
 
         const doctor = await Doctors.aggregate([
             {
-              $match: { _id: newid }
+                $match: { _id: newid }
             },
             {
                 $addFields: {
-                  specializationId: {
-                    $toObjectId: '$specialization'
-                  }
+                    specializationId: {
+                        $toObjectId: '$specialization'
+                    }
                 }
-              },
+            },
             {
-              $lookup: {
-                from: 'specialization',
-                localField: 'specializationId',
-                foreignField: '_id',
-                as: 'specializationData'
-              }
+                $lookup: {
+                    from: 'specialization',
+                    localField: 'specializationId',
+                    foreignField: '_id',
+                    as: 'specializationData'
+                }
             },
             {
                 $unwind: {
-                  path: '$specializationData',
-                  preserveNullAndEmptyArrays: true
+                    path: '$specializationData',
+                    preserveNullAndEmptyArrays: true
                 }
-              },
-              {
+            },
+            {
                 $project: {
-                  _id: 1,
-                  name: 1,
-                  age: 1,
-                  gender: 1,
-                  regno: 1,
-                  experience: 1,
-                  email: 1,
-                  password: 1,
-                  profileimg: 1,
-                  certificate: 1,
-                  fare: 1,
-                  status: 1,
-                  token: 1,
-                  approval: 1,
-                  specialization: {
-                    $ifNull: ['$specializationData.name', 'Unknown']
-                  }
+                    _id: 1,
+                    name: 1,
+                    age: 1,
+                    gender: 1,
+                    regno: 1,
+                    experience: 1,
+                    email: 1,
+                    password: 1,
+                    profileimg: 1,
+                    certificate: 1,
+                    fare: 1,
+                    status: 1,
+                    token: 1,
+                    approval: 1,
+                    specialization: {
+                        $ifNull: ['$specializationData.name', 'Unknown']
+                    }
                 }
-              }
-            
-            
-          ]);
+            }
+
+
+        ]);
         if (doctor) {
-            res.status(200).json({message:'Doctor found',doctorData:doctor[0]})
+            res.status(200).json({ message: 'Doctor found', doctorData: doctor[0] })
         } else {
-            res.status(404).json({message:'Doctor not found'})
+            res.status(404).json({ message: 'Doctor not found' })
         }
     } catch (error) {
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
         console.log(error);
     }
 }
 
-const loadUserProfile = async (req,res) => {
+const loadUserProfile = async (req, res) => {
     try {
-        
+
         const userId = req.params.userId
         const user = await Users.findById(userId)
         if (user) {
-            res.status(200).json({message:'User found',userData:user})
+            res.status(200).json({ message: 'User found', userData: user })
         } else {
-            res.status(404).json({message:'User not found'})
+            res.status(404).json({ message: 'User not found' })
         }
     } catch (error) {
-        
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
     }
 }
 
-const loadChartData = async (req,res) => {
+const loadChartData = async (req, res) => {
     try {
         const userResults = await Users.aggregate([
             {
-              $facet: {
-                usersData: [ { $match: {} } ], 
-              },
+                $facet: {
+                    usersData: [{ $match: {} }],
+                },
             },
             {
-              $project: {
-                usersData: { createdAt: 1 },
-              },
+                $project: {
+                    usersData: { createdAt: 1 },
+                },
             },
-          ]);
+        ]);
 
-          const doctorResult = await Doctors.aggregate([
+        const doctorResult = await Doctors.aggregate([
             {
-                $facet:{
-                    doctorsData: [ { $match: {} } ],
-                    doctorsCount:[ { $count:'count' } ],
+                $facet: {
+                    doctorsData: [{ $match: {} }],
+                    doctorsCount: [{ $count: 'count' }],
                 }
             },
             {
-                $project:{
-                    doctorsData: { createdAt: 1 }, 
+                $project: {
+                    doctorsData: { createdAt: 1 },
                     doctorsCount: { $arrayElemAt: ['$doctorsCount.count', 0] },
                 }
             }
-          ]);
-      
-          const usersData = userResults[0].usersData;
+        ]);
+
+        const usersData = userResults[0].usersData;
         //   const usersCount = userResults[0].usersCount;
-          const doctorsData = doctorResult[0].doctorsData;
+        const doctorsData = doctorResult[0].doctorsData;
         //   const doctorsCount = doctorResult[0].doctorsCount;
-          
-          const chartData = {
+
+        const chartData = {
             usersData,
             doctorsData,
-          }
+        }
 
-        
-        
 
-        console.log(chartData,"this is the chart data");
-          
+
+
+        console.log(chartData, "this is the chart data");
+
 
         if (chartData) {
-            res.status(200).json({message:"Chart data found",chartData})
+            res.status(200).json({ message: "Chart data found", chartData })
         } else {
-            res.status(404).status({message:"Chart data not found"})
+            res.status(404).status({ message: "Chart data not found" })
         }
 
 
     } catch (error) {
-        
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
     }
 }
 

@@ -277,6 +277,7 @@ const walletBookConsultation = async (req, res) => {
         }
 
     } catch (error) {
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
         console.log(error);
     }
 }
@@ -350,6 +351,7 @@ const loadUserBooking = async (req, res) => {
 const cancelBooking = async (req, res) => {
     try {
         const bookingId = req.params.bookingId;
+        
         const booking = await Bookings.findById(bookingId)
         if (booking) {
             // const user = await User.findByIdAndUpdate(booking.UserId, { $inc: { wallet: booking.Fare } })

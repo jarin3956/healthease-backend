@@ -11,6 +11,12 @@ const userVerify = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.USER_SECRET);
 
+    const { role } = decoded;
+
+    if (role !== 'user') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+
     const user = await User.findById(decoded.userId); 
 
     if (!user) {

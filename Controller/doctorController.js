@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const Schedule = require('../Model/scheduleModel');
+const Bookings = require('../Model/bookingModel')
 const mongoose = require('mongoose')
 
 require('dotenv').config()
@@ -99,7 +100,7 @@ const doctorRegister = async (req, res) => {
     } catch (error) {
 
         console.error(error);
-        return res.json({ status: 'error', error: 'An error occurred during registration' });
+        res.json({ status: 'error', error: 'An error occurred during registration' });
     }
 }
 
@@ -122,6 +123,7 @@ const resendOtp = async (req, res) => {
         }
     } catch (error) {
         console.log(error.message);
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
     }
 }
 
@@ -204,31 +206,26 @@ const doctorLogin = async (req, res) => {
         if (doctor) {
 
             if (doctor.isBlocked === true) {
-                return res.json({ status: 'error', message: 'You are blocked by admin' })
+                return res.status(403).json({ message: "You are blocked by the admin" })
             }
-
             if (doctor.status === true) {
                 const passwordMatch = await bcrypt.compare(password, doctor.password);
                 if (passwordMatch) {
-
-                    const doctortoken = jwt.sign({ doctorId: doctor._id }, process.env.DOCTOR_SECRET);
-
-                    return res.json({ status: 'ok', doctor: doctortoken })
+                    const role = 'doctor';
+                    const doctortoken = jwt.sign({ doctorId: doctor._id, role: role }, process.env.DOCTOR_SECRET);
+                    res.status(200).json({ doctor: doctortoken })
                 } else {
-                    return res.json({ status: 'error', message: 'Password do not match' })
+                    res.status(401).json({ message: "Password do not match" })
                 }
             } else {
-
-                return res.json({ status: 'error', message: 'You are not verified ' })
-
+                res.status(401).json({ message: 'You are not verified ' })
             }
         } else {
-
-            return res.json({ status: 'error', message: 'User not found' })
-
+            return res.status(404).json({ message: 'User not found' })
         }
     } catch (error) {
         console.log(error.message);
+        res.status(500).json({ message: 'Internal server error, please try after sometime'})
     }
 }
 
@@ -470,6 +467,20 @@ const loadDocEdit = async (req,res) => {
     }
 }
 
+const loadAllBookings = async (req,res) => {
+    try {
+        const bookings = await Bookings.find({})
+        if (bookings) {
+            res.status(200).json({ message:"Bookings found",bookingData:bookings })
+        } else {
+            res.status(404).json({ message:"Bookings not found" })
+        }
+    } catch (error) {
+        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        console.log(error);
+    }
+}
+
 
 
 
@@ -485,5 +496,6 @@ module.exports = {
     setSchedule,
     viewDocSchedule,
     updateSchedule,
-    loadDocEdit
+    loadDocEdit,
+    loadAllBookings
 }

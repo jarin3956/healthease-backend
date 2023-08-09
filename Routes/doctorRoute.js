@@ -17,7 +17,8 @@ doctor_route.post('/start-journey',upload.single('certificate'), doctorControlle
 doctor_route.post('/set-schedule',doctorVerify,doctorController.setSchedule);
 doctor_route.put('/update-schedule',doctorVerify,doctorController.updateSchedule);
 doctor_route.get('/schedule-data',doctorVerify,doctorController.viewDocSchedule);
-doctor_route.put('/edit-profile',doctorVerify , upload.fields([{ name: 'profileimg', maxCount: 1 },{name:'certificate' ,maxCount:1 }]),doctorController.loadDocEdit)
+doctor_route.put('/edit-profile',doctorVerify , upload.fields([{ name: 'profileimg', maxCount: 1 },{name:'certificate' ,maxCount:1 }]),doctorController.loadDocEdit);
+doctor_route.get('/load-all-bookings',doctorVerify, doctorController.loadAllBookings);
 
 
 module.exports = doctor_route;

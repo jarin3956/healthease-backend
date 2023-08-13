@@ -5,7 +5,7 @@ const specializationSchema = new mongoose.Schema({
     image: { type: String, required: true },
     description: {type: String,required: true},
     status: { type: Boolean, default: true },
-    CreatedAt: { type : Date , default:Date.now }
+    createdAt: { type : Date , default:Date.now }
 }, { collection: 'specialization' });
 
 const SpecializationModel = mongoose.model('Specialization', specializationSchema);

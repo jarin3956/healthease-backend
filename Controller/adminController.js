@@ -6,7 +6,7 @@ const Spec = require('../Model/specializationModel');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
 
 require('dotenv').config()
 
@@ -416,20 +416,14 @@ const loadChartData = async (req, res) => {
         ]);
 
         const usersData = userResults[0].usersData;
-        //   const usersCount = userResults[0].usersCount;
         const doctorsData = doctorResult[0].doctorsData;
-        //   const doctorsCount = doctorResult[0].doctorsCount;
 
         const chartData = {
             usersData,
             doctorsData,
         }
 
-
-
-
-        console.log(chartData, "this is the chart data");
-
+        // console.log(chartData, "this is the chart data");
 
         if (chartData) {
             res.status(200).json({ message: "Chart data found", chartData })

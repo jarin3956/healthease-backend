@@ -5,15 +5,15 @@ const specController = require('../Controller/specController');
 const multer = require("multer");
 const upload = multer({ dest: '../healthease/public/SpecializationImages' });
 
+const { adminverify } = require('../Middleware/adminMiddleware')
 
-spec_route.post('/register', upload.single('image'),specController.specRegister);
+
 spec_route.get('/view',specController.loadSpec);
-spec_route.get('/admin-view',specController.adminLoadSpec)
-spec_route.put('/control-specialization/:specId',specController.changeStatus)
-spec_route.delete('/delete-specialization/:specId',specController.deleteSpec)
-spec_route.post('/edit-spec',upload.single('image'),specController.editSpec)
-
-
+spec_route.post('/register',adminverify, upload.single('image'),specController.specRegister);
+spec_route.get('/admin-view',adminverify,specController.adminLoadSpec);
+spec_route.put('/control-specialization/:specId',adminverify,specController.changeStatus);
+spec_route.delete('/delete-specialization/:specId',adminverify,specController.deleteSpec);
+spec_route.post('/edit-spec',adminverify,upload.single('image'),specController.editSpec);
 
 
 module.exports = spec_route;

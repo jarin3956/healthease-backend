@@ -14,7 +14,7 @@ const specRegister = async (req,res) => {
             if (specData) {
                 res.status(200).json({ message: 'Specialization saved successfully' });
             } else {
-                res.status(500).json({ message: 'Cannot save specialization' });
+                res.status(400).json({ message: 'Cannot save specialization' });
             }
         } else {
             res.status(409).json({ message: 'Specialization already exists' });
@@ -50,7 +50,7 @@ const changeStatus = async (req,res) => {
             spec.status = !spec.status
             await spec.save()
             const allSpec = await Spec.find({})
-            res.status(200).json({ message: 'success', spec: spec });
+            res.status(200).json({ message: 'Successfully updated', spec: spec });
             
         }
     } catch (error) {
@@ -100,7 +100,7 @@ const editSpec = async (req,res) => {
 
 const adminLoadSpec = async (req,res) => {
     try {
-        let specData = await Spec.find({ })
+        let specData = await Spec.find({ }).sort({ createdAt: -1 });
         if (specData) {
             res.status(200).json({ spec: specData });
         } else {

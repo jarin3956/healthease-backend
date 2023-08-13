@@ -43,13 +43,10 @@ const sendOtp = async (name, email, user_id) => {
             }
         });
 
-
-
     } catch (error) {
         console.log(error.message);
     }
 }
-
 
 
 const securePassword = async (password) => {
@@ -65,7 +62,6 @@ const securePassword = async (password) => {
 const doctorRegister = async (req, res) => {
 
     try {
-
 
         const profileImgFile = req.files['profileimg'][0];
 
@@ -88,19 +84,19 @@ const doctorRegister = async (req, res) => {
                     sendOtp(req.body.name, req.body.email, doctor._id);
                     res.status(200).json({ id: doctor._id });
                 } else {
-                    res.status(500).json({ message: 'Failed to save doctor data' })
+                    res.status(400).json({ message: 'Failed to save doctor data' })
                 }
 
             } else {
-                res.json({ status: 'error', message: 'Password do not match' });
+                res.status(401).json({ message: 'Password do not match' });
             }
         } else {
-            res.json({ status: 'error', message: 'Doctor with the same email exists' })
+            res.status(409).json({ message: 'Doctor with the same email exists' })
         }
     } catch (error) {
 
         console.error(error);
-        res.json({ status: 'error', error: 'An error occurred during registration' });
+        res.status(500).json({ message: 'Internal server error.' });
     }
 }
 
@@ -230,10 +226,11 @@ const doctorLogin = async (req, res) => {
 }
 
 const findDoctor = async (req, res) => {
+
     try {
 
-        const newid = new mongoose.Types.ObjectId(req.params.doctorId)
-
+        const { doctorId } = req.decodedDoctor;
+        const newid = new mongoose.Types.ObjectId(doctorId);
         const doctor = await Doctor.aggregate([
             {
                 $match: { _id: newid }
@@ -297,7 +294,7 @@ const findDoctor = async (req, res) => {
 
 
 const addMoreData = async (req, res) => {
-    // console.log(req.body, "this is body");
+    
     let amount = 0;
     try {
         const { age, gender, regno, specialization, experience, docId, fare } = req.body
@@ -319,13 +316,13 @@ const addMoreData = async (req, res) => {
                 certificate: req.file.filename,
             }, { new: true })
         if (!doctor) {
-            res.status(404).json({ message: 'User not found' })
+            res.status(404).json({ message: 'User not found.' })
         } else {
             res.status(200).json({ status: 'Successfully updated', doctor: doctor })
         }
 
     } catch (error) {
-        res.status(500).json({ message: 'Internal server error' });
+        res.status(500).json({ message: 'Internal server error.' });
         console.log(error);
     }
 
@@ -334,10 +331,10 @@ const addMoreData = async (req, res) => {
 const setSchedule = async (req, res) => {
     try {
 
+        const { doctorId } = req.decodedDoctor;
         const { schedule } = req.body;
-
         const newSchedule = new Schedule({
-            doc_id: req.params.doctorId,
+            doc_id: doctorId,
             schedule: schedule.map((day) => ({
                 day: day.day,
                 time: day.time.map((timeslot) => ({
@@ -350,14 +347,13 @@ const setSchedule = async (req, res) => {
 
         if (updateDoc) {
             const scheduleSave = await newSchedule.save()
-            // console.log(scheduleSave, "SCHEDULE SAVE AAH");
             if (scheduleSave) {
                 res.status(200).json({ message: "Saved Schedule", schedule: scheduleSave })
             } else {
-                res.status(500).json({ message: "Failed to save schedule" });
+                res.status(400).json({ message: "Failed to save schedule" });
             }
         } else {
-            res.status(500).json({ message: "Failed to update schedule in doc profile" });
+            res.status(400).json({ message: "Failed to update schedule in doc profile" });
         }
 
 
@@ -370,9 +366,10 @@ const setSchedule = async (req, res) => {
 const updateSchedule = async (req, res) => {
     try {
 
+        const { doctorId } = req.decodedDoctor;
         const { schedule } = req.body;
         const updatedSchedule = await Schedule.findOneAndUpdate(
-            { doc_id: req.params.doctorId },
+            { doc_id: doctorId },
             {
                 schedule: schedule.map((day) => ({
                     day: day.day,
@@ -400,8 +397,9 @@ const updateSchedule = async (req, res) => {
 
 const viewDocSchedule = async (req, res) => {
     try {
+        const { doctorId } = req.decodedDoctor;
         const schedule = await Schedule.findOne({
-            doc_id: req.params.doctorId
+            doc_id: doctorId
         })
         if (schedule) {
             // console.log(schedule);
@@ -418,8 +416,8 @@ const viewDocSchedule = async (req, res) => {
 const loadDocEdit = async (req,res) => {
     try {
 
-        const docId = req.params.doctorId
-        let doctor = await Doctor.findById(docId);
+        const { doctorId } = req.decodedDoctor;
+        let doctor = await Doctor.findById(doctorId);
         if (doctor) {
             if (req.body.name) {
                 doctor.name = req.body.name
@@ -453,13 +451,12 @@ const loadDocEdit = async (req,res) => {
             if (docSave) {
                 res.status(200).json({message:'Successfully saved doctor'})
             } else {
-                res.status(500).json({message:'Cannot save doctor'})
+                res.status(400).json({message:'Cannot save doctor'})
             }
             
         } else {
             res.status(404).json({message:'Doctor not found'})
-        }
-        
+        }  
         
     } catch (error) {
         console.log(error);

@@ -100,7 +100,7 @@ const userRegister = async (req, res) => {
                     }, 60000);
                     res.status(200).json({ id: user._id });
                 } else {
-                    res.status(500).json({ message: 'Failed to save' })
+                    res.status(400).json({ message: 'Failed to save' })
                 }
             } else {
                 res.status(401).json({ message: 'Password do not match' });
@@ -185,7 +185,7 @@ const userLogin = async (req, res) => {
             if (!user) {
                 res.status(404).json({ message: "User not found" })
             } else if (!user.password) {
-                res.status(500).json({ message: 'You might be registered with google auth' })
+                res.status(400).json({ message: 'You might be registered with google auth' })
             }
             else {
                 res.status(401).json({ message: 'User not verified ' })
@@ -201,7 +201,9 @@ const userLogin = async (req, res) => {
 const findUser = async function (req, res) {
     try {
 
-        const user = await User.findById({ _id: req.params.userId });
+        const { userId } = req.decodedUser
+
+        const user = await User.findById({ _id: userId });
         if (user) {
             res.status(200).json({
                 _id: user._id,
@@ -227,7 +229,7 @@ const findUser = async function (req, res) {
 const addMoreData = async (req, res) => {
     try {
         const { age, gender, height, weight } = req.body;
-        const userId = req.params.userId;
+        const { userId } = req.decodedUser;
         const user = await User.findByIdAndUpdate(userId,
             { age, gender, height, weight }, { new: true })
         if (user) {
@@ -242,9 +244,9 @@ const addMoreData = async (req, res) => {
 }
 
 const profileEdit = async (req, res) => {
-    // console.log(req.body, "edit profile body");
+    
     try {
-        const { userId } = req.params;
+        const { userId } = req.decodedUser;
         let user = await User.findById(userId);
         if (user) {
             user.name = req.body.name;
@@ -270,7 +272,7 @@ const profileEdit = async (req, res) => {
            if (usersave) {
             res.status(200).json({ updateduser: user });
            } else {
-            res.status(500).json({message: 'Cannot save data, Please try after sometime'});
+            res.status(400).json({message: 'Cannot save data, Please try after sometime'});
            }
         } else {
             res.status(404).json({ message: 'Cannot find user' });
@@ -367,10 +369,10 @@ const loadGoogleLogin = async (req, res) => {
                     if (token) {
                         res.status(200).json({ message: 'google auth user created', user: token })
                     } else {
-                        res.status(500).json({ message: 'Cannot generate token' })
+                        res.status(400).json({ message: 'Cannot generate token' })
                     }
                 } else {
-                    res.status(500).json({ message: 'Cannot save data, please try after sometime' })
+                    res.status(400).json({ message: 'Cannot save data, please try after sometime' })
                 }
 
             } else {
@@ -383,11 +385,11 @@ const loadGoogleLogin = async (req, res) => {
                 if (token) {
                     res.status(200).json({ message: 'google auth user created', user: token })
                 } else {
-                    res.status(500).json({ message: 'Cannot generate token' })
+                    res.status(400).json({ message: 'Cannot generate token' })
                 }
             }
         } else {
-            res.status(500).json({ message: 'No login data found' })
+            res.status(400).json({ message: 'No login data found' })
         }
 
     } catch (error) {

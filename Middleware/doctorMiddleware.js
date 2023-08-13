@@ -26,7 +26,8 @@ const doctorVerify = async (req, res, next) => {
       return res.json({ error: 'Doctor Blocked' });
     }
 
-    req.params = decoded; 
+    // req.params = decoded; 
+    req.decodedDoctor = decoded
     next(); 
   } catch (error) {
     return res.status(401).json({ error: 'Invalid token' });

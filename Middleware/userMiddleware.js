@@ -27,7 +27,8 @@ const userVerify = async (req, res, next) => {
       return res.json({ error: 'User Blocked' });
     }
 
-    req.params = decoded; 
+    // req.params = decoded;
+    req.decodedUser = decoded 
     next(); 
   } catch (error) {
     return res.status(401).json({ error: 'Invalid token' });

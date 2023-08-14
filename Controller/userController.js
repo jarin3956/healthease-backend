@@ -233,7 +233,7 @@ const addMoreData = async (req, res) => {
         const user = await User.findByIdAndUpdate(userId,
             { age, gender, height, weight }, { new: true })
         if (user) {
-            res.status(200).json({ user: user })
+            res.status(200).json({message:'Data updated successfully', user: user })
         } else {
             res.status(404).json({ message: 'User not found' })
         }
@@ -270,7 +270,7 @@ const profileEdit = async (req, res) => {
 
            const usersave = await user.save();
            if (usersave) {
-            res.status(200).json({ updateduser: user });
+            res.status(200).json({message:'Updated successfully', updateduser: user });
            } else {
             res.status(400).json({message: 'Cannot save data, Please try after sometime'});
            }
@@ -282,20 +282,6 @@ const profileEdit = async (req, res) => {
     }
 };
 
-
-// const viewSpec = async (req, res) => {
-//     try {
-//         const specData = await Spec.find({})
-//         if (specData) {
-
-//             res.json({ status: 'ok', spec: specData });
-//         } else {
-//             res.json({ status: 'error', message: 'Cannot find specialization' });
-//         }
-//     } catch (error) {
-//         console.log(error);
-//     }
-// }
 
 const loadDoctors = async (req, res) => {
 
@@ -411,7 +397,6 @@ module.exports = {
     verifyLogin,
     addMoreData,
     profileEdit,
-    // viewSpec,
     loadDoctors,
     viewDocSlot,
     loadDocSpec,

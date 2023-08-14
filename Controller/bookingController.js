@@ -464,10 +464,10 @@ const uploadPrescription = async (req, res) => {
                     res.status(400).json({ message: "Cannot save the prescription" })
                 }
             } else {
-                res.status(404).json({ message:'Cannot find booking data' })
+                res.status(404).json({ message: 'Cannot find booking data' })
             }
         } else {
-            res.status(409).json({ message: 'Prescription already exist'})
+            res.status(409).json({ message: 'Prescription already exist' })
         }
 
     } catch (error) {
@@ -475,18 +475,79 @@ const uploadPrescription = async (req, res) => {
     }
 }
 
-const viewUserPrescription = async (req,res) => {
+const viewUserPrescription = async (req, res) => {
 
     try {
-        const {bookingId} = req.params;
-        const presc = await Prescription.findOne({ bookingId:bookingId });
+        
+        const { bookingId } = req.params;
+        const presc = await Prescription.findOne({ bookingId: bookingId });
+
         if (presc) {
-            res.status(200).json({ message:'Prescription Found', presc})
+            
+            const newdocid = new mongoose.Types.ObjectId(presc.docId);
+            const doctor = await Doctor.aggregate([
+                {
+                    $match: { _id: newdocid }
+                },
+                {
+                    $addFields: {
+                        specializationId: {
+                            $toObjectId: '$specialization'
+                        }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'specialization',
+                        localField: 'specializationId',
+                        foreignField: '_id',
+                        as: 'specializationData'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$specializationData',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        age: 1,
+                        gender: 1,
+                        regno: 1,
+                        experience: 1,
+                        email: 1,
+                        password: 1,
+                        profileimg: 1,
+                        certificate: 1,
+                        fare: 1,
+                        status: 1,
+                        token: 1,
+                        approval: 1,
+                        specialization: {
+                            $ifNull: ['$specializationData.name', 'Unknown']
+                        }
+                    }
+                }
+    
+            ]);
+
+            const user = await User.findById(presc.userId)
+
+            if (doctor && user) {
+                const thedoc = doctor[0]
+                res.status(200).json({ message: 'Prescription Found', presc, doctor:thedoc , user });
+            } else {
+                res.status(404).json({ message: 'Could not find the patient data or doctor data' });
+            }
         } else {
-            res.status(404).json({message:'Could not find the prescription'})
+            res.status(404).json({ message: 'Could not find the prescription' });
         }
+
     } catch (error) {
-        res.status(500).json({message:'Internal server error'})
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
 

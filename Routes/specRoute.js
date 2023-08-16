@@ -3,7 +3,7 @@ const spec_route = express();
 const specController = require('../Controller/specController');
 
 const multer = require("multer");
-const upload = multer({ dest: '../healthease/public/SpecializationImages' });
+const upload = multer({ dest: '../client/public/SpecializationImages' });
 
 const { adminverify } = require('../Middleware/adminMiddleware')
 

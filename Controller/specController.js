@@ -32,7 +32,7 @@ const loadSpec = async (req,res) => {
         if (specData) {
             res.status(200).json({ spec: specData });
         } else {
-            res.status(404).json({ message: 'No data found' });
+            res.status(404).json({ message: 'Cannot find data' });
         }
     } catch (error) {
         console.log(error);
@@ -45,7 +45,7 @@ const changeStatus = async (req,res) => {
         const { specId } = req.params;
         const spec = await Spec.findById(specId)
         if (!spec) {
-            return res.status(404).json({ message: 'User not found' });
+            return res.status(404).json({ message: 'Cannot find user' });
         } else {
             spec.status = !spec.status
             await spec.save()
@@ -67,7 +67,7 @@ const deleteSpec = async (req,res) => {
         if (spec) {
             res.status(200).json({ message: 'Deleted successfully' });
         } else {
-            res.status(404).json({ message: 'Cannot found the specialization' });
+            res.status(404).json({ message: 'Cannot found the specialization data' });
         }
     } catch (error) {
         console.log(error);
@@ -89,7 +89,7 @@ const editSpec = async (req,res) => {
 
             res.status(200).json({ message: 'Saved Successfully', spec: allSpec });
         } else {
-            res.status(404).json({ message: 'Cannot save the specialization' });
+            res.status(404).json({ message: 'Cannot save the specialization data' });
     
         }
     } catch (error) {
@@ -104,7 +104,7 @@ const adminLoadSpec = async (req,res) => {
         if (specData) {
             res.status(200).json({ spec: specData });
         } else {
-            res.status(404).json({ message: 'No data found' });
+            res.status(404).json({ message: 'Cannot find data' });
         }
     } catch (error) {
         res.status(500).json({ message: 'Internal server error' });

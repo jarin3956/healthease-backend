@@ -4,7 +4,7 @@ const doctor_route = express();
 const doctorController = require('../Controller/doctorController');
 
 const multer = require("multer");
-const upload = multer({ dest: '../healthease/public/DocImages' });
+const upload = multer({ dest: '../client/public/DocImages' });
 
 
 doctor_route.post('/register', upload.fields([{ name: 'profileimg', maxCount: 1 }]) , doctorController.doctorRegister);

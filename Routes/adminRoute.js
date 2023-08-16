@@ -6,6 +6,7 @@ const { adminverify } = require('../Middleware/adminMiddleware');
 
 admin_route.post('/register',adminController.adminRegister);
 admin_route.post('/login', adminController.adminLogin);
+
 admin_route.get('/dashboard',adminverify,adminController.findAdmin);
 admin_route.get('/users',adminverify,adminController.loadUsers);
 admin_route.get('/doctors',adminverify,adminController.loadDoctors);

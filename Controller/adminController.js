@@ -33,19 +33,19 @@ const adminRegister = async function (req, res) {
             if (req.body.password === req.body.repassword) {
                 const adminData = await admin.save()
                 if (adminData) {
-                    res.json({ status: 'ok' })
+                    res.status(200).json({ message: 'Admin registered successfully' })
                 } else {
-                    res.json({ status: 'error', message: 'Failed to save' })
+                    res.status(400).json({ message: 'Failed to save admin' })
                 }
             } else {
-                res.json({ status: 'error', message: 'Password do not match' })
+                res.status(401).json({ message: 'Password do not match' })
             }
         } else {
-            res.json({ status: 'error', message: 'Admin with this same email exists' })
+            res.status(409).json({ message: 'Admin with this same email exists' })
         }
     } catch (error) {
         console.log(error.message);
-        res.status(500).json({ status: 'error', message: 'Internal server error' });
+        res.status(500).json({ message: 'Internal server error' });
     }
 }
 
@@ -68,7 +68,7 @@ const adminLogin = async (req, res) => {
         }
     } catch (error) {
         console.log(error.message);
-        res.status(500).json({ message: 'Internal server error, please try after sometime' })
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
 
@@ -110,13 +110,13 @@ const loadUsers = async function (req, res) {
     try {
         const usersData = await Users.find({})
         if (usersData) {
-            res.json({ users: usersData })
+            res.status(200).json({ message: 'User data found', users: usersData })
         } else {
-            res.json({ status: 'error', message: 'No data found' })
+            res.status(404).json({ message: 'No user data found' })
         }
     } catch (error) {
         console.log(error);
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({ message: 'Internal server error' })
     }
 }
 
@@ -124,6 +124,7 @@ const loadUsers = async function (req, res) {
 
 const loadDoctors = async function (req, res) {
     try {
+       
         const doctorData = await Doctors.aggregate([
             {
                 $match: {
@@ -169,6 +170,7 @@ const loadDoctors = async function (req, res) {
                     token: 1,
                     approval: 1,
                     isBlocked: 1,
+                    createdAt: 1,
                     specialization: {
                         $ifNull: ['$specializationData.name', 'Unknown']
                     }
@@ -176,15 +178,14 @@ const loadDoctors = async function (req, res) {
             }
         ]);
 
-
         if (doctorData) {
-            res.json({ doctors: doctorData })
+            res.status(200).json({ message: 'Found doctor data', doctors: doctorData })
         } else {
-            res.json({ status: 'error', message: 'No data found' })
+            res.status(404).json({ message: 'Cannot found doctor data' })
         }
     } catch (error) {
         console.log(error);
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({ message: 'Internal server error' })
     }
 }
 
@@ -193,14 +194,10 @@ const loadDoctors = async function (req, res) {
 const changeUserStatus = async function (req, res) {
     try {
         const { userId } = req.params;
-
-        console.log(req.params, "the moongose user id");
-
         const user = await Users.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-
         user.isBlocked = !user.isBlocked;
         await user.save();
 
@@ -279,9 +276,12 @@ const handleBlocking = async (req, res) => {
         } else {
             doctor.isBlocked = true
         }
-        await doctor.save();
-        return res.status(200).json({ message: 'Changed Successfully', doctor: doctor });
-
+        const docSave = await doctor.save();
+        if (docSave) {
+            res.status(200).json({ message: 'Changed Successfully', doctor: doctor });
+        } else {
+            res.status(400).status({ message: 'Cannot save doctor data' })
+        }
 
     } catch (error) {
         res.status(500).json({ message: 'Internal server error' });
@@ -292,7 +292,6 @@ const handleBlocking = async (req, res) => {
 const loadBooking = async (req, res) => {
 
     try {
-        // console.log(req.decodedAdmin,"admin token id");
         const bookings = await Bookings.find({})
         if (bookings) {
             res.status(200).json({ message: "Bookings found", bookingData: bookings })
@@ -300,7 +299,7 @@ const loadBooking = async (req, res) => {
             res.status(404).json({ message: "Bookings not found" })
         }
     } catch (error) {
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({ message: 'Internal server error' })
         console.log(error);
     }
 }
@@ -357,7 +356,6 @@ const loadDoctorProfile = async (req, res) => {
                 }
             }
 
-
         ]);
         if (doctor) {
             res.status(200).json({ message: 'Doctor found', doctorData: doctor[0] })
@@ -365,7 +363,7 @@ const loadDoctorProfile = async (req, res) => {
             res.status(404).json({ message: 'Doctor not found' })
         }
     } catch (error) {
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({ message: 'Internal server error' })
         console.log(error);
     }
 }
@@ -381,7 +379,7 @@ const loadUserProfile = async (req, res) => {
             res.status(404).json({ message: 'User not found' })
         }
     } catch (error) {
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({ message: 'Internal server error' })
     }
 }
 
@@ -433,13 +431,9 @@ const loadChartData = async (req, res) => {
 
 
     } catch (error) {
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({ message: 'Internal server error' })
     }
 }
-
-
-
-
 
 
 

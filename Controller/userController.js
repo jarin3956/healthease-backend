@@ -57,8 +57,6 @@ const sendOtp = async (name, email) => {
             }
         });
 
-
-
     } catch (error) {
         console.log(error.message);
     }
@@ -77,7 +75,6 @@ const securePassword = async (password) => {
 }
 
 const userRegister = async (req, res) => {
-
 
     try {
         const userfind = await User.findOne({ email: req.body.email })
@@ -100,7 +97,7 @@ const userRegister = async (req, res) => {
                     }, 60000);
                     res.status(200).json({ id: user._id });
                 } else {
-                    res.status(400).json({ message: 'Failed to save' })
+                    res.status(400).json({ message: 'Failed to save user' })
                 }
             } else {
                 res.status(401).json({ message: 'Password do not match' });
@@ -109,7 +106,7 @@ const userRegister = async (req, res) => {
             res.status(409).json({ message: 'Email already used' })
         }
     } catch (error) {
-        res.status(500).json({ message: 'An error occurred during registration' })
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
 
@@ -124,15 +121,16 @@ const resendOtp = async (req, res) => {
             let userData = await user.save()
             if (userData) {
                 sendOtp(user.name, user.email)
-                res.json({ status: 'ok', message: "Successfully send otp" })
+                res.status(200).json({ message: "Successfully send otp" })
             } else {
-                res.json({ status: 'error', message: "user cannot be saved" })
+                res.status(400).json({ message: "Cannot save user" })
             }
         } else {
-            res.json({ status: 'error', message: "user not found" })
+            res.status(404).json({ message: "User not found" })
         }
     } catch (error) {
         console.log(error.message);
+        res.status(500).json({ message:'Internal server error' })
     }
 }
 
@@ -143,22 +141,23 @@ const verifyLogin = async (req, res) => {
         const user = await User.findById(id)
         if (user && user.token == otp) {
             user.status = true
-            await user.save();
-            res.json({ status: 'ok' });
+            const userSave = await user.save();
+            if (userSave) {
+                res.status(200).json({ message: 'Saved successfully' });
+            } else {
+                res.status(400).json({ message:'Cannot save user data' })
+            }
         }
         else if (!user) {
-
-            return res.json({ status: 'error', message: 'User not found' });
+            return res.status(404).json({ message: 'Cannot find user' });
         }
         else if (user.token != otp) {
-
-            return res.json({ status: 'error', message: 'Incorrect OTP' });
+            return res.status(401).json({ message: 'Incorrect OTP' });
         }
-
 
     } catch (error) {
         console.log(error.message);
-        res.json({ status: 'error', message: 'Internal server error' });
+        res.status(500).json({ message: 'Internal server error' });
     }
 
 }
@@ -171,7 +170,7 @@ const userLogin = async (req, res) => {
 
         if (user && user.status === true && user.password) {
             if (user.isBlocked === true) {
-                return res.status(403).json({ message: "You are blocked by the admin" })
+                return res.status(403).json({ message: "You are blocked by the admin", user:'user' })
             }
             const passwordMatch = await bcrypt.compare(password, user.password);
             if (passwordMatch) {
@@ -194,7 +193,7 @@ const userLogin = async (req, res) => {
         }
     } catch (error) {
         console.log(error.message);
-        res.status(500).json({ message: 'Internal server error, please try after sometime' })
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
 
@@ -221,7 +220,7 @@ const findUser = async function (req, res) {
             res.status(404).json({ message: 'User not found' })
         }
     } catch (error) {
-        res.status(500).json({ message: 'Internal server error, Please try after sometime' })
+        res.status(500).json({ message: 'Internal server error' })
         console.log(error);
     }
 }
@@ -239,7 +238,7 @@ const addMoreData = async (req, res) => {
         }
 
     } catch (error) {
-        res.status(500).json({ message: 'Internal server error, Please try after sometime' })
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
 
@@ -272,13 +271,13 @@ const profileEdit = async (req, res) => {
            if (usersave) {
             res.status(200).json({message:'Updated successfully', updateduser: user });
            } else {
-            res.status(400).json({message: 'Cannot save data, Please try after sometime'});
+            res.status(400).json({message: 'Cannot save user data'});
            }
         } else {
             res.status(404).json({ message: 'Cannot find user' });
         }
     } catch (error) {
-        res.status(500).json({ message: 'Internal server error, Please try after sometime' });
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -293,12 +292,12 @@ const loadDoctors = async (req, res) => {
         const doctor = await Doctor.find({ specialization: specialization._id, scheduled: true, approval: true });
 
         if (doctor.length > 0) {
-            res.status(200).json({ message: 'Doctors found', doctor: doctor })
+            res.status(200).json({ message: 'Found doctor data', doctor: doctor })
         } else {
-            res.status(404).json({ message: 'No doctors found' })
+            res.status(404).json({ message: 'Cannot find doctor data' })
         }
     } catch (error) {
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({message:'Internal server error'})
     }
 }
 
@@ -310,10 +309,10 @@ const viewDocSlot = async (req, res) => {
         if (schedule) {
             res.status(200).json({ message: "Schedule found", schedule: schedule.schedule })
         } else {
-            res.status(404).json({ message: "Schedule not found" })
+            res.status(404).json({ message: "Cannot find schedule data" })
         }
     } catch (error) {
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({message:'Internal server error'})
         console.log(error.message);
     }
 }
@@ -325,11 +324,11 @@ const loadDocSpec = async (req, res) => {
         if (specData) {
             res.status(200).json({ spec: specData });
         } else {
-            res.status(404).json({ message: 'No data found' });
+            res.status(404).json({ message: 'Cannot find data' });
         }
     } catch (error) {
         console.log(error);
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({message:'Internal server error'})
     }
 }
 
@@ -358,12 +357,12 @@ const loadGoogleLogin = async (req, res) => {
                         res.status(400).json({ message: 'Cannot generate token' })
                     }
                 } else {
-                    res.status(400).json({ message: 'Cannot save data, please try after sometime' })
+                    res.status(400).json({ message: 'Cannot save user data' })
                 }
 
             } else {
                 if (userfind.isBlocked === true) {
-                    return res.status(403).json({ message: "You are blocked by admin" })
+                    return res.status(403).json({ message: "You are blocked by admin" , user:'user'})
                 }
                 const role = 'user';
                 const token = jwt.sign({ userId: userfind._id, role: role }, process.env.USER_SECRET);
@@ -380,13 +379,9 @@ const loadGoogleLogin = async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: 'Cannot process now, please try after some time' })
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
-
-
-
-
 
 
 module.exports = {

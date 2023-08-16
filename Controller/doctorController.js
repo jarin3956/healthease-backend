@@ -96,7 +96,7 @@ const doctorRegister = async (req, res) => {
     } catch (error) {
 
         console.error(error);
-        res.status(500).json({ message: 'Internal server error.' });
+        res.status(500).json({ message: 'Internal server error' });
     }
 }
 
@@ -110,16 +110,16 @@ const resendOtp = async (req, res) => {
             let doctorData = await doctor.save()
             if (doctorData) {
                 sendOtp(doctor.name, doctor.email)
-                res.json({ status: 'ok', message: "Successfully send otp" })
+                res.status(200).json({ message: "Successfully send otp" })
             } else {
-                res.json({ status: 'error', message: "user cannot be saved" })
+                res.status(400).json({ message: "Cannot save user data" })
             }
         } else {
-            res.json({ status: 'error', message: "user not found" })
+            res.status(404).json({ message: "Cannot find user" })
         }
     } catch (error) {
         console.log(error.message);
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({ message:'Internal server error' })
     }
 }
 
@@ -174,22 +174,22 @@ const verifyLogin = async (req, res) => {
     try {
         const doctor = await Doctor.findById(id)
         if (!doctor) {
-
-            return res.json({ status: 'error', message: 'User not found' });
+            return res.status(404).json({ message: 'User not found' });
         }
         if (doctor.token !== otp) {
-
-            return res.json({ status: 'error', message: 'Incorrect OTP' });
+            return res.status(401).json({ message: 'Incorrect OTP' });
         }
         doctor.status = true
-        await doctor.save();
-        res.json({ status: 'ok' });
-
+        const docSave =await doctor.save();
+        if (docSave) {
+            res.status(200).json({message:'User saved successfully'})
+        } else {
+            res.status(400).json({message:'Cannot save user data'})
+        }
     } catch (error) {
         console.log(error.message);
-        res.json({ status: 'error', message: 'Internal server error' });
+        res.status(500).json({ message: 'Internal server error' });
     }
-
 }
 
 
@@ -202,7 +202,7 @@ const doctorLogin = async (req, res) => {
         if (doctor) {
 
             if (doctor.isBlocked === true) {
-                return res.status(403).json({ message: "You are blocked by the admin" })
+                return res.status(403).json({ message: "You are blocked by the admin", user:'doctor' })
             }
             if (doctor.status === true) {
                 const passwordMatch = await bcrypt.compare(password, doctor.password);
@@ -221,7 +221,7 @@ const doctorLogin = async (req, res) => {
         }
     } catch (error) {
         console.log(error.message);
-        res.status(500).json({ message: 'Internal server error, please try after sometime'})
+        res.status(500).json({ message: 'Internal server error'})
     }
 }
 
@@ -322,13 +322,14 @@ const addMoreData = async (req, res) => {
         }
 
     } catch (error) {
-        res.status(500).json({ message: 'Internal server error.' });
+        res.status(500).json({ message: 'Internal server error' });
         console.log(error);
     }
 
 }
 
 const setSchedule = async (req, res) => {
+
     try {
 
         const { doctorId } = req.decodedDoctor;
@@ -343,7 +344,7 @@ const setSchedule = async (req, res) => {
             })),
         });
 
-        const updateDoc = await Doctor.findByIdAndUpdate(req.params.doctorId, { scheduled: true });
+        const updateDoc = await Doctor.findByIdAndUpdate(doctorId, { scheduled: true });
 
         if (updateDoc) {
             const scheduleSave = await newSchedule.save()
@@ -353,9 +354,8 @@ const setSchedule = async (req, res) => {
                 res.status(400).json({ message: "Failed to save schedule" });
             }
         } else {
-            res.status(400).json({ message: "Failed to update schedule in doc profile" });
+            res.status(400).json({ message: "Failed to update schedule in doctor profile" });
         }
-
 
     } catch (error) {
         res.status(500).json({ message: "Internal server error" });
@@ -364,6 +364,7 @@ const setSchedule = async (req, res) => {
 }
 
 const updateSchedule = async (req, res) => {
+
     try {
 
         const { doctorId } = req.decodedDoctor;
@@ -391,18 +392,23 @@ const updateSchedule = async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        res.status(500).json({ error: 'Error updating schedule' });
+        res.status(500).json({ message: 'Internal server error' });
     }
 }
 
 const viewDocSchedule = async (req, res) => {
     try {
         const { doctorId } = req.decodedDoctor;
+
+        const doctor = await Doctor.findById(doctorId)
+        if (doctor.scheduled === false) {
+            return res.status(422).json({ message:'Complete your profile and update your schedule to start your journey' })
+        }
+        
         const schedule = await Schedule.findOne({
             doc_id: doctorId
         })
         if (schedule) {
-            // console.log(schedule);
             res.status(200).json({ message: "Doctors Schedule found", schedule: schedule })
         } else {
             res.status(404).json({ message: "Cannot find doctors schedule" })
@@ -455,7 +461,7 @@ const loadDocEdit = async (req,res) => {
             }
             
         } else {
-            res.status(404).json({message:'Doctor not found'})
+            res.status(404).json({message:'Cannot find user data'})
         }  
         
     } catch (error) {
@@ -473,7 +479,7 @@ const loadAllBookings = async (req,res) => {
             res.status(404).json({ message:"Bookings not found" })
         }
     } catch (error) {
-        res.status(500).status({message:'Internal server error, Please try after sometime'})
+        res.status(500).status({message:'Internal server error'})
         console.log(error);
     }
 }

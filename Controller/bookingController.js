@@ -73,6 +73,7 @@ const loadDoctor = async (req, res) => {
 }
 
 const checDocAvailability = async (req, res) => {
+
     try {
 
         const { selectedDay, selectedTime, docId } = req.body.verifyData
@@ -87,20 +88,20 @@ const checDocAvailability = async (req, res) => {
                     if (timeSlotToUpdate.isAvailable) {
                         res.status(200).json({ message: "The is okay for booking" });
                     } else {
-                        res.status(409).json({ message: "The selected time slot is already booked." });
+                        res.status(409).json({ message: "The selected time slot is already booked" });
                     }
                 } else {
-                    res.status(404).json({ message: "Selected time slot not found in the schedule." });
+                    res.status(404).json({ message: "Selected time slot not found in the schedule" });
                 }
             } else {
-                res.status(404).json({ message: "Selected day not found in the schedule." });
+                res.status(404).json({ message: "Selected day not found in the schedule" });
             }
         } else {
-            res.status(404).json({ message: "Doctor's schedule not found." });
+            res.status(404).json({ message: "Doctor's schedule not found" });
         }
 
     } catch (error) {
-        res.status(500).json({ message: "An error occurred while checking availability." });
+        res.status(500).json({ message: "Internal server error" });
     }
 }
 
@@ -129,11 +130,12 @@ const loadUserWallet = async (req, res) => {
         }
 
     } catch (error) {
-        res.status(500).json({ message: 'Internal server error, please try after sometime' })
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
 
 const bookConsultation = async (req, res) => {
+     
     try {
 
         const { selectedDay, selectedTime, selectedDate, docId, final_fare, payment_create_time, payment_update_time, payment_id } = req.body.paymentData;
@@ -192,7 +194,7 @@ const bookConsultation = async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        res.status(500).json({ message: "An error occurred during the booking process" });
+        res.status(500).json({ message: "Internal server erorr" });
     }
 }
 
@@ -204,6 +206,7 @@ const walletBookConsultation = async (req, res) => {
     };
 
     try {
+
         const { selectedDay, selectedTime, selectedDate, docId, final_fare } = req.body.bookingData;
         const { userId } = req.decodedUser;
         const paymentType = 'wallet'
@@ -276,7 +279,7 @@ const walletBookConsultation = async (req, res) => {
         }
 
     } catch (error) {
-        res.status(500).status({ message: 'Internal server error, Please try after sometime' })
+        res.status(500).status({ message: 'Internal server error' })
         console.log(error);
     }
 }
@@ -286,10 +289,8 @@ const loadDoctorBooking = async (req, res) => {
     try {
 
         const { doctorId } = req.decodedDoctor;
+
         const booking = await Bookings.find({ DocId: doctorId }).sort({ CreatedAt: -1 });
-        if (booking.length === 0) {
-            return res.status(404).json({ message: 'Doctor bookings not found' });
-        }
 
         const userIds = [...new Set(booking.map((booking) => booking.UserId))];
 
@@ -302,8 +303,20 @@ const loadDoctorBooking = async (req, res) => {
                 userData: user
             };
         });
-
-        res.status(200).json({ message: 'Doctor bookings found', bookingData: bookingDataWithUserData });
+        
+        if (bookingDataWithUserData) {
+            const doctor = await Doctor.findById(doctorId)
+            if (booking.length === 0 && doctor.scheduled === true) {
+                return res.status(404).json({ message: 'Doctor bookings not found' });
+            }
+            if (doctor) {
+                res.status(200).json({ message: 'Doctor bookings found', bookingData: bookingDataWithUserData , doctor });
+            } else {
+                res.status(404).json({ message:'Could not find the doctor data'})
+            }
+        } else {
+            res.status(404).json({ message:'Counld not find the booking data' })
+        }
 
     } catch (error) {
         console.log(error);
@@ -330,9 +343,18 @@ const loadUserBooking = async (req, res) => {
                 bookingData: booking,
                 doctorData: doctor
             }
-        })
+        });
 
-        res.status(200).json({ message: "User booking Found", bookingData: bookingDataWithDoctorData })
+        if (bookingDataWithDoctorData) {
+            const user = await User.findById(userId);
+            if (user) {
+                res.status(200).json({ message: "User booking Found", bookingData: bookingDataWithDoctorData, user })  
+            } else {
+                res.status(404).json({ message:'Could not find the user data' })
+            }
+        } else {
+            res.status(404).json({ message:'Could not find the booking data' })
+        }
 
     } catch (error) {
         console.log(error);
@@ -363,10 +385,10 @@ const cancelBooking = async (req, res) => {
                 if (bookingSave) {
                     res.status(200).json({ message: 'Cancelled Booking' })
                 } else {
-                    res.status(400).json({ message: 'Internal server error, could not save the data' })
+                    res.status(400).json({ message: 'Could not save booking data' })
                 }
             } else {
-                res.status(400).json({ message: 'Internal server error, could not save the make the wallet update' })
+                res.status(400).json({ message: 'Could not save the make the wallet update' })
             }
         } else {
             res.status(404).json({ message: "Cound not found the booking" })
@@ -551,6 +573,25 @@ const viewUserPrescription = async (req, res) => {
     }
 }
 
+const loadTheBooking = async (req,res) => {
+    try {
+        const booking = await Bookings.findById(req.params.bookingId)
+
+        if (booking) {
+            const user = await User.findById(booking.UserId);
+            if (user) {
+                res.status(200).json({ message: 'Booking data found', booking , user  })
+            } else {
+                res.status(404).json({ message:' User data not found ' })
+            }
+        } else {
+            res.status(404).json({ message:'Booking data not found' })
+        }
+    } catch (error) {
+        res.status(500).json({ message:'Internal server error' })
+    }
+}
+
 
 module.exports = {
     loadDoctor,
@@ -564,5 +605,6 @@ module.exports = {
     updateCompleted,
     updateFeedback,
     uploadPrescription,
-    viewUserPrescription
+    viewUserPrescription,
+    loadTheBooking
 }

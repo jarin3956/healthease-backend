@@ -4,7 +4,7 @@ const { userVerify } = require('../Middleware/userMiddleware');
 const userController = require('../Controller/userController');
 
 const multer = require("multer");
-const upload = multer({ dest: '../healthease/public/UserImages' });
+const upload = multer({ dest: '../client/public/UserImages' });
 
 
 user_route.post('/register', upload.single('image') ,userController.userRegister);

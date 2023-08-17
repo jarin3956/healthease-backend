@@ -307,7 +307,7 @@ const loadDoctorBooking = async (req, res) => {
         if (bookingDataWithUserData) {
             const doctor = await Doctor.findById(doctorId)
             if (booking.length === 0 && doctor.scheduled === true) {
-                return res.status(404).json({ message: 'Doctor bookings not found' });
+                return res.status(204).json({ message: 'NO bookings data available for you' });
             }
             if (doctor) {
                 res.status(200).json({ message: 'Doctor bookings found', bookingData: bookingDataWithUserData , doctor });

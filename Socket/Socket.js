@@ -9,9 +9,10 @@ function initializeSocket(server) {
 
     io.on('connection', (socket) => {
 
-        console.log(`socket connected`);
-
+        // console.log(`socket connected`);
+        
         //chat 
+
         socket.on('set-up', (userData) => {
             socket.join(userData)
         });
@@ -38,6 +39,10 @@ function initializeSocket(server) {
         socket.on('doc-rejected',(user)=>{
             socket.in(user).emit('chat-rejected')
         })
+
+        socket.on('leave-chat',(roomId) => {
+            socket.leave(roomId)
+        });
 
         // video
 

@@ -12,7 +12,7 @@ const specRegister = async (req,res) => {
             })
             const specData = await spec.save()
             if (specData) {
-                res.status(200).json({ message: 'Specialization saved successfully' });
+                res.status(200).json({ message: 'Specialization registered successfully' });
             } else {
                 res.status(400).json({ message: 'Cannot save specialization' });
             }
@@ -41,16 +41,27 @@ const loadSpec = async (req,res) => {
 }
 
 const changeStatus = async (req,res) => {
+
     try {
+
+        let resMsg = '';
+
         const { specId } = req.params;
         const spec = await Spec.findById(specId)
         if (!spec) {
             return res.status(404).json({ message: 'Cannot find user' });
         } else {
-            spec.status = !spec.status
+            if (spec.status === true) {
+                spec.status = false
+                resMsg = 'Specialization blocked Successfull'
+            } else {
+                spec.status = true
+                resMsg = 'Specialization unblocked Successfull'
+            }
+            // spec.status = !spec.status
             await spec.save()
             const allSpec = await Spec.find({})
-            res.status(200).json({ message: 'Successfully updated', spec: spec });
+            res.status(200).json({ message: resMsg, spec: spec });
             
         }
     } catch (error) {
@@ -63,9 +74,11 @@ const deleteSpec = async (req,res) => {
     
     try {
         const { specId } = req.params;
+
         const spec = await Spec.findByIdAndDelete(specId)
+
         if (spec) {
-            res.status(200).json({ message: 'Deleted successfully' });
+            res.status(200).json({ message: 'Deleted specialization successfully' });
         } else {
             res.status(404).json({ message: 'Cannot found the specialization data' });
         }
@@ -85,9 +98,10 @@ const editSpec = async (req,res) => {
                 spec.image = req.file.filename
             }
             await spec.save()
+
             const allSpec = await Spec.find({})
 
-            res.status(200).json({ message: 'Saved Successfully', spec: allSpec });
+            res.status(200).json({ message: 'Edited specialization Successfully', spec: allSpec });
         } else {
             res.status(404).json({ message: 'Cannot save the specialization data' });
     

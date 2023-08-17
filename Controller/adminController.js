@@ -192,16 +192,26 @@ const loadDoctors = async function (req, res) {
 
 
 const changeUserStatus = async function (req, res) {
+
     try {
+
+        let resMsg = '';
         const { userId } = req.params;
         const user = await Users.findById(userId);
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
-        user.isBlocked = !user.isBlocked;
+        if (user.isBlocked === true) {
+            user.isBlocked = false
+            resMsg = 'Unblocked Doctor Successfully'
+        } else {
+            user.isBlocked = true
+            resMsg = 'Blocked Doctor Successfully'
+        }
+
         await user.save();
 
-        return res.status(200).json({ message: 'Successfully Changed', user: user });
+        return res.status(200).json({ message: resMsg, user: user });
 
     } catch (error) {
         console.error(error);
@@ -254,7 +264,7 @@ const changeDoctorStatus = async function (req, res) {
 
         }
         await doctor.save();
-        return res.status(200).json({ message: 'Changed Successfully', doctor: doctor });
+        return res.status(200).json({ message: 'Verfied doctor Successfully', doctor: doctor });
 
 
     } catch (error) {
@@ -266,6 +276,7 @@ const changeDoctorStatus = async function (req, res) {
 
 const handleBlocking = async (req, res) => {
     try {
+        let resMsg = ''
         const { doctorId } = req.params;
         const doctor = await Doctors.findById(doctorId)
         if (!doctor) {
@@ -273,12 +284,14 @@ const handleBlocking = async (req, res) => {
         }
         if (doctor.isBlocked === true) {
             doctor.isBlocked = false
+            resMsg = 'Unblocked Doctor Successfully'
         } else {
             doctor.isBlocked = true
+            resMsg = 'Blocked Doctor Successfully'
         }
         const docSave = await doctor.save();
         if (docSave) {
-            res.status(200).json({ message: 'Changed Successfully', doctor: doctor });
+            res.status(200).json({ message: resMsg , doctor: doctor });
         } else {
             res.status(400).status({ message: 'Cannot save doctor data' })
         }

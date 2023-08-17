@@ -12,7 +12,7 @@ admin_route.get('/users',adminverify,adminController.loadUsers);
 admin_route.get('/doctors',adminverify,adminController.loadDoctors);
 admin_route.put('/change-user-status/:userId',adminverify,adminController.changeUserStatus);
 admin_route.put('/change-doctor-status/:doctorId',adminverify,adminController.changeDoctorStatus);
-admin_route.put('/change-doctor-blocking/:doctorId',adminverify, adminController.handleBlocking);
+admin_route.put('/doctor-blocking-mgt/:doctorId',adminverify, adminController.handleBlocking);
 admin_route.get('/bookings',adminverify,adminController.loadBooking);
 admin_route.get('/view-doctor-profile/:doctorId',adminverify,adminController.loadDoctorProfile);
 admin_route.get('/view-user-profile/:userId',adminverify,adminController.loadUserProfile);

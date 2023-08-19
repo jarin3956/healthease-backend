@@ -18,6 +18,7 @@ booking_route.post('/submit-feedback',userVerify,bookingController.updateFeedbac
 booking_route.post('/submit-prescription',doctorVerify, bookingController.uploadPrescription);
 booking_route.get('/view-user-prescription/:bookingId',userVerify, bookingController.viewUserPrescription);
 booking_route.get('/load-booking/:bookingId',userVerify,bookingController.loadTheBooking);
+booking_route.post('/follow-up-booking',doctorVerify,bookingController.followUpBooking)
 
 
 module.exports = booking_route;

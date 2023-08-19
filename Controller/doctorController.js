@@ -3,8 +3,11 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const Schedule = require('../Model/scheduleModel');
-const Bookings = require('../Model/bookingModel')
-const mongoose = require('mongoose')
+const Bookings = require('../Model/bookingModel');
+const Feedback = require('../Model/feedbackModel');
+const mongoose = require('mongoose');
+const Time = require('../Model/timeModel');
+const Day = require('../Model/dayModel');
 
 require('dotenv').config()
 
@@ -119,7 +122,7 @@ const resendOtp = async (req, res) => {
         }
     } catch (error) {
         console.log(error.message);
-        res.status(500).status({ message:'Internal server error' })
+        res.status(500).status({ message: 'Internal server error' })
     }
 }
 
@@ -180,11 +183,11 @@ const verifyLogin = async (req, res) => {
             return res.status(401).json({ message: 'Incorrect OTP' });
         }
         doctor.status = true
-        const docSave =await doctor.save();
+        const docSave = await doctor.save();
         if (docSave) {
-            res.status(200).json({message:'User saved successfully'})
+            res.status(200).json({ message: 'User saved successfully' })
         } else {
-            res.status(400).json({message:'Cannot save user data'})
+            res.status(400).json({ message: 'Cannot save user data' })
         }
     } catch (error) {
         console.log(error.message);
@@ -202,7 +205,7 @@ const doctorLogin = async (req, res) => {
         if (doctor) {
 
             if (doctor.isBlocked === true) {
-                return res.status(403).json({ message: "You are blocked by the admin", user:'doctor' })
+                return res.status(403).json({ message: "You are blocked by the admin", user: 'doctor' })
             }
             if (doctor.status === true) {
                 const passwordMatch = await bcrypt.compare(password, doctor.password);
@@ -221,7 +224,7 @@ const doctorLogin = async (req, res) => {
         }
     } catch (error) {
         console.log(error.message);
-        res.status(500).json({ message: 'Internal server error'})
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
 
@@ -280,12 +283,24 @@ const findDoctor = async (req, res) => {
 
 
         ]);
-        if (doctor) {
-            // console.log(doctor, "doc data analysis");
-            res.status(200).json({ doctor: doctor[0] });
-        } else {
-            res.status(404).json({ message: "Cound not find doctor" })
+
+        const feedback = await Feedback.find({ docId: newid })
+        if (feedback.length && doctor) {
+            let ratings = feedback.map((element) => element.rating)
+            let ratingSum = ratings.reduce((a, b) => { return a += b }, 0)
+            let average = Math.trunc(ratingSum / feedback.length)
+            if (average) {
+                res.status(200).json({ doctor: doctor[0], average });
+            }
         }
+        else {
+            if (doctor) {
+                res.status(200).json({ doctor: doctor[0] });
+            } else {
+                res.status(404).json({ message: "Cound not find doctor" })
+            }
+        }
+
     } catch (error) {
         console.log(error.message);
         res.status(500).json({ message: 'Internal server error' });
@@ -294,7 +309,7 @@ const findDoctor = async (req, res) => {
 
 
 const addMoreData = async (req, res) => {
-    
+
     let amount = 0;
     try {
         const { age, gender, regno, specialization, experience, docId, fare } = req.body
@@ -402,9 +417,9 @@ const viewDocSchedule = async (req, res) => {
 
         const doctor = await Doctor.findById(doctorId)
         if (doctor.scheduled === false) {
-            return res.status(422).json({ message:'Complete your profile and update your schedule to start your journey' })
+            return res.status(422).json({ message: 'Complete your profile and update your schedule to start your journey' })
         }
-        
+
         const schedule = await Schedule.findOne({
             doc_id: doctorId
         })
@@ -419,7 +434,7 @@ const viewDocSchedule = async (req, res) => {
     }
 }
 
-const loadDocEdit = async (req,res) => {
+const loadDocEdit = async (req, res) => {
     try {
 
         const { doctorId } = req.decodedDoctor;
@@ -448,38 +463,57 @@ const loadDocEdit = async (req,res) => {
             }
             if (req.files && req.files.profileimg && req.files.profileimg[0]) {
                 doctor.profileimg = req.files.profileimg[0].filename;
-              }
-              if (req.files && req.files.certificate && req.files.certificate[0]) {
+            }
+            if (req.files && req.files.certificate && req.files.certificate[0]) {
                 doctor.certificate = req.files.certificate[0].filename;
-              }
-              doctor.approval = false
+            }
+            doctor.approval = false
             let docSave = await doctor.save()
             if (docSave) {
-                res.status(200).json({message:'Successfully saved doctor'})
+                res.status(200).json({ message: 'Successfully saved doctor' })
             } else {
-                res.status(400).json({message:'Cannot save doctor'})
+                res.status(400).json({ message: 'Cannot save doctor' })
             }
-            
+
         } else {
-            res.status(404).json({message:'Cannot find user data'})
-        }  
-        
+            res.status(404).json({ message: 'Cannot find user data' })
+        }
+
     } catch (error) {
         console.log(error);
-        res.status(500).json({message:'Internal server error'})
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
 
-const loadAllBookings = async (req,res) => {
+const loadAllBookings = async (req, res) => {
     try {
         const bookings = await Bookings.find({})
         if (bookings) {
-            res.status(200).json({ message:"Bookings found",bookingData:bookings })
+            res.status(200).json({ message: "Bookings found", bookingData: bookings })
         } else {
-            res.status(404).json({ message:"Bookings not found" })
+            res.status(404).json({ message: "Bookings not found" })
         }
     } catch (error) {
-        res.status(500).status({message:'Internal server error'})
+        res.status(500).status({ message: 'Internal server error' })
+        console.log(error);
+    }
+}
+
+const loadTimeSlots = async (req, res) => {
+    try {
+        const daySlots = await Day.find({})
+        const extractedDays = daySlots.map((daySlot) => daySlot.day_slot.map((slot) => slot.day)).flat();
+        const timeSlots = await Time.find({})
+        const extractedTime = timeSlots.map((timeSlot) => timeSlot.time_slot.map((slot) => slot.time)).flat();
+        // console.log(extractedTime,'this is the time slot');
+        // console.log(extractedDays,'it is the time slots');
+        if (extractedDays && extractedTime) {
+            res.status(200).json({ extractedDays, extractedTime })
+        } else {
+            res.status(404).json({ message: 'Cannot find the day slots and time slots' })
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' })
         console.log(error);
     }
 }
@@ -500,5 +534,6 @@ module.exports = {
     viewDocSchedule,
     updateSchedule,
     loadDocEdit,
-    loadAllBookings
+    loadAllBookings,
+    loadTimeSlots
 }

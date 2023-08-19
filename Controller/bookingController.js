@@ -135,7 +135,7 @@ const loadUserWallet = async (req, res) => {
 }
 
 const bookConsultation = async (req, res) => {
-     
+
     try {
 
         const { selectedDay, selectedTime, selectedDate, docId, final_fare, payment_create_time, payment_update_time, payment_id } = req.body.paymentData;
@@ -284,6 +284,72 @@ const walletBookConsultation = async (req, res) => {
     }
 }
 
+const followUpBooking = async (req, res) => {
+    try {
+        const { selectedDay, selectedTime, selectedDate, bookingId } = req.body.bookingData;
+        // console.log(selectedDay,selectedTime,selectedDate,bookingId,"backend data for follow up booking");
+        const booking = await Bookings.findById(bookingId);
+        
+        if (booking) {
+            const userId = booking.UserId
+            const doctorId = booking.DocId
+            const doctorFare = booking.Fare
+
+            const newBooking = new Bookings({
+                DocId: doctorId,
+                UserId: userId,
+                Booked_date: selectedDate,
+                Booked_day: selectedDay,
+                Booked_timeSlot: selectedTime,
+                Fare: doctorFare,
+                Status: 'NOTPAID',
+            });
+
+            const schedule = await Schedule.findOne({ doc_id: doctorId });
+            if (schedule) {
+                const dayToUpdate = schedule.schedule.find(day => day.day === selectedDay);
+                if (dayToUpdate) {
+                    const timeSlotToUpdate = dayToUpdate.time.find(time => time.timeslot === selectedTime);
+                    if (timeSlotToUpdate) {
+                        if (timeSlotToUpdate.isAvailable) {
+                            timeSlotToUpdate.isAvailable = false;
+                            const scheduleSave = await schedule.save();
+                            if (scheduleSave) {
+                                const booked = newBooking.save();
+                                if (booked) {
+                                    res.status(200).json({ message: "Booking Saved Successfully", bookingData: newBooking });
+                                } else {
+                                    res.status(400).json({ message: "Failed to save bookings" });
+                                }
+                            } else {
+                                res.status(400).json({ message: "Failed to update doctors slot" });
+                            }
+                        } else {
+                            booking.Status = 'FAILED';
+                            const booked = newBooking.save()
+                            res.status(409).json({ message: "The selected time slot is already booked." });
+                        }
+                    } else {
+                        res.status(400).json({ message: "Failed to save bookings" });
+                    }
+                } else {
+                    res.status(400).json({ message: "Failed to save bookings" });
+                }
+            } else {
+                res.status(400).json({ message: "Failed to save bookings" });
+            }
+
+        } else {
+            res.status(400).json({ message: "Failed to find last booking data" });
+        }
+        // console.log(booking,"'this is ths old booking");
+
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' })
+        console.log(error);
+    }
+}
+
 const loadDoctorBooking = async (req, res) => {
 
     try {
@@ -303,19 +369,19 @@ const loadDoctorBooking = async (req, res) => {
                 userData: user
             };
         });
-        
+
         if (bookingDataWithUserData) {
             const doctor = await Doctor.findById(doctorId)
             if (booking.length === 0 && doctor.scheduled === true) {
                 return res.status(204).json({ message: 'NO bookings data available for you' });
             }
             if (doctor) {
-                res.status(200).json({ message: 'Doctor bookings found', bookingData: bookingDataWithUserData , doctor });
+                res.status(200).json({ message: 'Doctor bookings found', bookingData: bookingDataWithUserData, doctor });
             } else {
-                res.status(404).json({ message:'Could not find the doctor data'})
+                res.status(404).json({ message: 'Could not find the doctor data' })
             }
         } else {
-            res.status(404).json({ message:'Counld not find the booking data' })
+            res.status(404).json({ message: 'Counld not find the booking data' })
         }
 
     } catch (error) {
@@ -327,8 +393,16 @@ const loadDoctorBooking = async (req, res) => {
 const loadUserBooking = async (req, res) => {
     try {
 
-        const { userId } = req.decodedUser
-        const booking = await Bookings.find({ UserId: userId }).sort({ CreatedAt: -1 });
+        const { userId } = req.decodedUser;
+        const { page, limit } = req.query;
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+
+        const booking = await Bookings.find({ UserId: userId })
+            .sort({ CreatedAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit))
+            .exec();
+
         if (booking.length === 0) {
             return res.status(404).json({ message: 'User booking not found' })
         }
@@ -348,12 +422,12 @@ const loadUserBooking = async (req, res) => {
         if (bookingDataWithDoctorData) {
             const user = await User.findById(userId);
             if (user) {
-                res.status(200).json({ message: "User booking Found", bookingData: bookingDataWithDoctorData, user })  
+                res.status(200).json({ message: "User booking Found", bookingData: bookingDataWithDoctorData, user })
             } else {
-                res.status(404).json({ message:'Could not find the user data' })
+                res.status(404).json({ message: 'Could not find the user data' })
             }
         } else {
-            res.status(404).json({ message:'Could not find the booking data' })
+            res.status(404).json({ message: 'Could not find the booking data' })
         }
 
     } catch (error) {
@@ -500,12 +574,12 @@ const uploadPrescription = async (req, res) => {
 const viewUserPrescription = async (req, res) => {
 
     try {
-        
+
         const { bookingId } = req.params;
         const presc = await Prescription.findOne({ bookingId: bookingId });
 
         if (presc) {
-            
+
             const newdocid = new mongoose.Types.ObjectId(presc.docId);
             const doctor = await Doctor.aggregate([
                 {
@@ -553,14 +627,14 @@ const viewUserPrescription = async (req, res) => {
                         }
                     }
                 }
-    
+
             ]);
 
             const user = await User.findById(presc.userId)
 
             if (doctor && user) {
                 const thedoc = doctor[0]
-                res.status(200).json({ message: 'Prescription Found', presc, doctor:thedoc , user });
+                res.status(200).json({ message: 'Prescription Found', presc, doctor: thedoc, user });
             } else {
                 res.status(404).json({ message: 'Could not find the patient data or doctor data' });
             }
@@ -573,22 +647,22 @@ const viewUserPrescription = async (req, res) => {
     }
 }
 
-const loadTheBooking = async (req,res) => {
+const loadTheBooking = async (req, res) => {
     try {
         const booking = await Bookings.findById(req.params.bookingId)
 
         if (booking) {
             const user = await User.findById(booking.UserId);
             if (user) {
-                res.status(200).json({ message: 'Booking data found', booking , user  })
+                res.status(200).json({ message: 'Booking data found', booking, user })
             } else {
-                res.status(404).json({ message:' User data not found ' })
+                res.status(404).json({ message: ' User data not found ' })
             }
         } else {
-            res.status(404).json({ message:'Booking data not found' })
+            res.status(404).json({ message: 'Booking data not found' })
         }
     } catch (error) {
-        res.status(500).json({ message:'Internal server error' })
+        res.status(500).json({ message: 'Internal server error' })
     }
 }
 
@@ -606,5 +680,6 @@ module.exports = {
     updateFeedback,
     uploadPrescription,
     viewUserPrescription,
-    loadTheBooking
+    loadTheBooking,
+    followUpBooking
 }

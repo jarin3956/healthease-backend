@@ -286,10 +286,8 @@ const loadDoctors = async (req, res) => {
 
     try {
         const specialName = req.params.specialName
-
         const specialization = await Spec.findOne({ name: specialName })
-
-        const doctor = await Doctor.find({ specialization: specialization._id, scheduled: true, approval: true });
+        const doctor = await Doctor.find({ specialization: specialization._id, scheduled: true, approval: true, schedule_Status: true });
 
         if (doctor.length > 0) {
             res.status(200).json({ message: 'Found doctor data', doctor: doctor })

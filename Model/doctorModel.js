@@ -19,6 +19,7 @@ const DoctorSchema = new mongoose.Schema({
     scheduled: {type: Boolean , default: false},
     createdAt: { type : Date , default:Date.now },
     isBlocked: { type :Boolean ,default: false },
+    schedule_Status: { type :Boolean},
 }, { collection: 'doctors' });
 
 const DoctorModel = mongoose.model('Doctor', DoctorSchema);

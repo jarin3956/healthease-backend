@@ -234,9 +234,7 @@ const walletBookConsultation = async (req, res) => {
         const walletUpdate = user.save()
         if (walletUpdate) {
             const paymentId = generateRandomNumber();
-
             booking.Payment_id = paymentId;
-
             const schedule = await Schedule.findOne({ doc_id: docId })
 
             if (schedule) {
@@ -289,7 +287,7 @@ const followUpBooking = async (req, res) => {
         const { selectedDay, selectedTime, selectedDate, bookingId } = req.body.bookingData;
         // console.log(selectedDay,selectedTime,selectedDate,bookingId,"backend data for follow up booking");
         const booking = await Bookings.findById(bookingId);
-        
+
         if (booking) {
             const userId = booking.UserId
             const doctorId = booking.DocId
@@ -342,26 +340,107 @@ const followUpBooking = async (req, res) => {
         } else {
             res.status(400).json({ message: "Failed to find last booking data" });
         }
-        // console.log(booking,"'this is ths old booking");
-
     } catch (error) {
         res.status(500).json({ message: 'Internal server error' })
         console.log(error);
     }
 }
 
+const loadFollowUpData = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const booking = await Bookings.findById(bookingId);
+        const doctor = await Doctor.findById(booking.DocId);
+        if (booking && doctor) {
+            res.status(200).json({ booking, doctor })
+        } else {
+            res.status(404).json({ message: 'Could not find doctordata and bookingdata' })
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' })
+    }
+}
+
+const followUpPayment = async (req, res) => {
+    try {
+        const { bookingId, payment_create_time, payment_update_time, payment_id } = req.body.paymentData;
+        const paymentType = 'paypal';
+        const updatebooking = await Bookings.findByIdAndUpdate(
+            bookingId,
+            {
+                Payment_id: payment_id,
+                Payment_create_time: payment_create_time,
+                Payment_update_time: payment_update_time,
+                Payment_type: paymentType,
+                Status: 'PENDING'
+            },
+            { new: true }
+        )
+        if (updatebooking) {
+            res.status(200).json({ message: 'Payment successfull and booking updated', updatebooking })
+        } else {
+            res.status(400).json({ message: 'Cannot update booking' })
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' })
+        console.log(error);
+    }
+}
+
+const followUpWalletPayment = async (req, res) => {
+    const generateRandomNumber = () => {
+        const min = 1000000000000000;
+        const max = 9999999999999999;
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    };
+    try {
+        const { bookingId, fare } = req.body.paymentData;
+        const { userId } = req.decodedUser;
+        const user = await User.findById(userId);
+        if (user && fare) {
+            user.wallet.push({
+                amount: fare,
+                timestamp: new Date(),
+                type: 'D'
+            });
+            const walletUpdate = user.save()
+            if (walletUpdate) {
+                const paymentId = generateRandomNumber();
+                const paymentType = 'wallet';
+                const updatebooking = await Bookings.findByIdAndUpdate(
+                    bookingId,
+                    {
+                        Payment_id: paymentId,
+                        Payment_create_time: Date.now(),
+                        Payment_update_time: Date.now(),
+                        Payment_type: paymentType,
+                        Status: 'PENDING'
+                    },
+                    { new: true }
+                )
+                if (updatebooking) {
+                    res.status(200).json({ message: 'payment successfull and booking updated', updatebooking })
+                } else {
+                    res.status(400).json({ message: 'Cannot update booking' })
+                }
+            } else {
+                res.status(400).json({ message: 'Cannot proceed wallet payment now' })
+            }
+        } else {
+            res.status(404).json({ message: 'Cannot find user data' })
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' })
+    }
+}
+
 const loadDoctorBooking = async (req, res) => {
 
     try {
-
         const { doctorId } = req.decodedDoctor;
-
         const booking = await Bookings.find({ DocId: doctorId }).sort({ CreatedAt: -1 });
-
         const userIds = [...new Set(booking.map((booking) => booking.UserId))];
-
         const users = await User.find({ _id: { $in: userIds } }).lean().exec();
-
         const bookingDataWithUserData = booking.map((booking) => {
             const user = users.find((user) => user._id.toString() === booking.UserId);
             return {
@@ -408,9 +487,7 @@ const loadUserBooking = async (req, res) => {
         }
 
         const doctorIds = [...new Set(booking.map((booking) => booking.DocId))];
-
         const doctors = await Doctor.find({ _id: { $in: doctorIds } }).lean().exec();
-
         const bookingDataWithDoctorData = booking.map((booking) => {
             const doctor = doctors.find((doctor) => doctor._id.toString() === booking.DocId);
             return {
@@ -438,31 +515,55 @@ const loadUserBooking = async (req, res) => {
 }
 
 const cancelBooking = async (req, res) => {
+
     try {
 
         const bookingId = req.params.bookingId;
         const booking = await Bookings.findById(bookingId)
         if (booking) {
+            const bookingDay = booking.Booked_day;
+            const bookingTimeslot = booking.Booked_timeSlot;
+            const docSchedule = await Schedule.findOne({ doc_id: booking.DocId })
+            const dayToUpdate = docSchedule.schedule.find((day) => day.day === bookingDay);
+            if (dayToUpdate) {
+                const timeslotToUpdate = dayToUpdate.time.find((timeslot) => timeslot.timeslot === bookingTimeslot);
+                if (timeslotToUpdate) {
+                    if (timeslotToUpdate.isAvailable === false) {
+                        timeslotToUpdate.isAvailable = true;
+                    }
+                    const updatedDocSchedule = await docSchedule.save();
+                    if (updatedDocSchedule) {
 
-            const user = await User.findByIdAndUpdate(booking.UserId, {
-                $push: {
-                    wallet: {
-                        amount: booking.Fare,
-                        type: 'C',
-                    },
-                },
-            });
+                        const user = await User.findByIdAndUpdate(booking.UserId, {
+                            $push: {
+                                wallet: {
+                                    amount: booking.Fare,
+                                    type: 'C',
+                                },
+                            },
+                        });
 
-            if (user) {
-                booking.Status = 'CANCELLED'
-                const bookingSave = await booking.save()
-                if (bookingSave) {
-                    res.status(200).json({ message: 'Cancelled Booking' })
+                        if (user) {
+                            booking.Status = 'CANCELLED'
+                            const bookingSave = await booking.save()
+                            if (bookingSave) {
+                                res.status(200).json({ message: 'Cancelled Booking' })
+                            } else {
+                                res.status(400).json({ message: 'Could not save booking data' })
+                            }
+                        } else {
+                            res.status(400).json({ message: 'Could not save the make the wallet update' })
+                        }
+
+                    } else {
+                        res.status(400).json({ message: 'Could not update doctor schedule' })
+                    }
+
                 } else {
-                    res.status(400).json({ message: 'Could not save booking data' })
+                    res.status(400).json({ message: 'Could not update doctor schedule' })
                 }
             } else {
-                res.status(400).json({ message: 'Could not save the make the wallet update' })
+                res.status(400).json({ message: 'Could not update doctor schedule' })
             }
         } else {
             res.status(404).json({ message: "Cound not found the booking" })
@@ -476,17 +577,39 @@ const cancelBooking = async (req, res) => {
 
 const updateCompleted = async (req, res) => {
     try {
-        let bookingId = req.params.bookingConfirmId
-        const booking = await Bookings.findById(bookingId)
+        const bookingId = req.params.bookingConfirmId
+        const booking = await Bookings.findById(bookingId);
+        
         if (booking) {
-            if (booking.Status === 'PENDING') {
-                booking.Status = 'COMPLETED'
-            }
-            const updated = await booking.save()
-            if (updated) {
-                res.status(200).json({ message: 'Completed successfully' })
+            const bookingDay = booking.Booked_day;
+            const bookingTimeslot = booking.Booked_timeSlot;
+            const docSchedule = await Schedule.findOne({ doc_id: booking.DocId })
+            const dayToUpdate = docSchedule.schedule.find((day) => day.day === bookingDay);
+            if (dayToUpdate) {
+                const timeslotToUpdate = dayToUpdate.time.find((timeslot) => timeslot.timeslot === bookingTimeslot);
+                if (timeslotToUpdate) {
+                    if (timeslotToUpdate.isAvailable === false) {
+                        timeslotToUpdate.isAvailable = true;
+                    }
+                    const updatedDocSchedule = await docSchedule.save();
+                    if (updatedDocSchedule) {
+                        if (booking.Status === 'PENDING') {
+                            booking.Status = 'COMPLETED'
+                        }
+                        const updated = await booking.save()
+                        if (updated) {
+                            res.status(200).json({ message: 'Completed successfully' })
+                        } else {
+                            res.status(400).json({ message: 'Cannot save data' })
+                        }
+                    } else {
+                        res.status(400).json({ message: 'Could not update doctor schedule' })
+                    }
+                } else {
+                    res.status(400).json({ message: 'Could not update doctor schedule' })
+                }
             } else {
-                res.status(400).json({ message: 'Cannot save data' })
+                res.status(400).json({ message: 'Could not update doctor schedule' })
             }
         } else {
             res.status(404).json({ message: 'Cannot find booking data' })
@@ -681,5 +804,8 @@ module.exports = {
     uploadPrescription,
     viewUserPrescription,
     loadTheBooking,
-    followUpBooking
+    followUpBooking,
+    loadFollowUpData,
+    followUpWalletPayment,
+    followUpPayment
 }

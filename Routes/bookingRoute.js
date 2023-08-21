@@ -18,7 +18,10 @@ booking_route.post('/submit-feedback',userVerify,bookingController.updateFeedbac
 booking_route.post('/submit-prescription',doctorVerify, bookingController.uploadPrescription);
 booking_route.get('/view-user-prescription/:bookingId',userVerify, bookingController.viewUserPrescription);
 booking_route.get('/load-booking/:bookingId',userVerify,bookingController.loadTheBooking);
-booking_route.post('/follow-up-booking',doctorVerify,bookingController.followUpBooking)
+booking_route.post('/follow-up-booking',doctorVerify,bookingController.followUpBooking);
+booking_route.get('/followup-bookingData/:bookingId',userVerify,bookingController.loadFollowUpData);
+booking_route.post('/followUp-paymentdata',userVerify,bookingController.followUpPayment);
+booking_route.post('/followup-walletBooking',userVerify,bookingController.followUpWalletPayment)
 
 
 module.exports = booking_route;

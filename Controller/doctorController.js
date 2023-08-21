@@ -349,6 +349,7 @@ const setSchedule = async (req, res) => {
 
         const { doctorId } = req.decodedDoctor;
         const { schedule } = req.body;
+
         const newSchedule = new Schedule({
             doc_id: doctorId,
             schedule: schedule.map((day) => ({
@@ -359,7 +360,13 @@ const setSchedule = async (req, res) => {
             })),
         });
 
-        const updateDoc = await Doctor.findByIdAndUpdate(doctorId, { scheduled: true });
+        // const updateDoc = await Doctor.findByIdAndUpdate(doctorId, { scheduled: true , schedule_Status:true });
+
+        const updateDoc = await Doctor.findByIdAndUpdate(
+            doctorId,
+            { scheduled: true, schedule_Status: true },
+            { new: true }
+          );
 
         if (updateDoc) {
             const scheduleSave = await newSchedule.save()
@@ -505,8 +512,7 @@ const loadTimeSlots = async (req, res) => {
         const extractedDays = daySlots.map((daySlot) => daySlot.day_slot.map((slot) => slot.day)).flat();
         const timeSlots = await Time.find({})
         const extractedTime = timeSlots.map((timeSlot) => timeSlot.time_slot.map((slot) => slot.time)).flat();
-        // console.log(extractedTime,'this is the time slot');
-        // console.log(extractedDays,'it is the time slots');
+
         if (extractedDays && extractedTime) {
             res.status(200).json({ extractedDays, extractedTime })
         } else {
@@ -518,7 +524,49 @@ const loadTimeSlots = async (req, res) => {
     }
 }
 
+const viewScheduleStatus = async (req, res) => {
+    try {
+        const { doctorId } = req.decodedDoctor;
+        const doctor = await Doctor.findById(doctorId)
+        if (doctor) {
+            res.status(200).json({ message: 'Found doctor schedule', doctor })
+        } else {
+            res.status.json({ message: 'Cannot find doctor data' })
+        }
+    } catch (error) {
+        res.status(404).json({ message: 'Internal server error' })
+        console.log(error);
+    }
+}
 
+const changeScheduleStatus = async (req, res) => {
+
+    try {
+        let resMsg = '';
+        const { doctorId } = req.decodedDoctor;
+        const doctorToUpdate = await Doctor.findById(doctorId);
+        if (doctorToUpdate) {
+            const updatedSchedule = !doctorToUpdate.schedule_Status;
+            resMsg = updatedSchedule ? 'Schedule Started Successfully' : 'Schedule Stopped Successfully';
+            const updateDoctor = await Doctor.findByIdAndUpdate(
+                doctorId,
+                { schedule_Status: updatedSchedule },
+                { new: true }
+            );
+            if (updateDoctor) {
+                res.status(200).json({ message: resMsg })
+            } else {
+                res.status(400).json({ message: 'Cannot update schedule status' })
+            }
+        } else {
+            res.status(404).json({ message: 'Cannot find doctor data' })
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' })
+        console.log(error);
+    }
+
+}
 
 
 
@@ -535,5 +583,7 @@ module.exports = {
     updateSchedule,
     loadDocEdit,
     loadAllBookings,
-    loadTimeSlots
+    loadTimeSlots,
+    viewScheduleStatus,
+    changeScheduleStatus
 }

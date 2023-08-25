@@ -14,7 +14,9 @@ spec_route.post('/register',adminverify,specController.specRegister);
 spec_route.get('/admin-view',adminverify,specController.adminLoadSpec);
 spec_route.put('/control-specialization/:specId',adminverify,specController.changeStatus);
 spec_route.delete('/delete-specialization/:specId',adminverify,specController.deleteSpec);
-spec_route.post('/edit-spec',adminverify,upload.single('image'),specController.editSpec);
+// spec_route.post('/edit-spec',adminverify,upload.single('image'),specController.editSpec);
+spec_route.post('/edit-spec',adminverify,specController.editSpec);
+
 
 
 module.exports = spec_route;

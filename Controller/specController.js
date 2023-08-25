@@ -94,8 +94,8 @@ const editSpec = async (req,res) => {
         if (spec) {
             spec.name = req.body.name
             spec.description=  req.body.description
-            if (req.file) {
-                spec.image = req.file.filename
+            if (req.body.image) {
+                spec.image = req.body.image
             }
             await spec.save()
 

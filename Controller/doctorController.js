@@ -66,7 +66,7 @@ const doctorRegister = async (req, res) => {
 
     try {
 
-        const profileImgFile = req.files['profileimg'][0];
+        // const profileImgFile = req.files['profileimg'][0];
 
         const doctorexist = await Doctor.findOne({ email: req.body.email })
         if (!doctorexist) {
@@ -75,7 +75,7 @@ const doctorRegister = async (req, res) => {
                 name: req.body.name,
                 email: req.body.email,
                 password: spassword,
-                profileimg: profileImgFile.filename,
+                profileimg: req.body.profileimg,
                 token: OTP
 
             })
@@ -312,7 +312,7 @@ const addMoreData = async (req, res) => {
 
     let amount = 0;
     try {
-        const { age, gender, regno, specialization, experience, docId, fare } = req.body
+        const { age, gender, regno, specialization, experience, docId, fare,certificate } = req.body
         if (fare) {
             const price = parseInt(fare);
             const percentage = 15;
@@ -328,7 +328,7 @@ const addMoreData = async (req, res) => {
                 experience,
                 fare,
                 final_fare: amount,
-                certificate: req.file.filename,
+                certificate,
             }, { new: true })
         if (!doctor) {
             res.status(404).json({ message: 'User not found.' })
@@ -468,11 +468,11 @@ const loadDocEdit = async (req, res) => {
             if (req.body.specialization) {
                 doctor.specialization = req.body.specialization
             }
-            if (req.files && req.files.profileimg && req.files.profileimg[0]) {
-                doctor.profileimg = req.files.profileimg[0].filename;
+            if (req.body.profileimg) {
+                doctor.profileimg = req.body.profileimg
             }
-            if (req.files && req.files.certificate && req.files.certificate[0]) {
-                doctor.certificate = req.files.certificate[0].filename;
+            if (req.body.certificate) {
+                doctor.certificate = req.body.certificate
             }
             doctor.approval = false
             let docSave = await doctor.save()

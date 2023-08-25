@@ -249,11 +249,9 @@ const profileEdit = async (req, res) => {
         let user = await User.findById(userId);
         if (user) {
             user.name = req.body.name;
-
             if (req.body.image) {
                 user.image = req.body.image;
             }
-
             if (req.body.age) {
                 user.age = req.body.age;
             }
@@ -266,7 +264,6 @@ const profileEdit = async (req, res) => {
             if (req.body.gender) {
                 user.gender = req.body.gender;
             }
-
            const usersave = await user.save();
            if (usersave) {
             res.status(200).json({message:'Updated successfully', updateduser: user });

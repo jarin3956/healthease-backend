@@ -84,7 +84,7 @@ const userRegister = async (req, res) => {
                 name: req.body.name,
                 email: req.body.email,
                 password: spassword,
-                image: req.file.filename,
+                image: req.body.image,
                 token: OTP
 
             })
@@ -250,8 +250,8 @@ const profileEdit = async (req, res) => {
         if (user) {
             user.name = req.body.name;
 
-            if (req.file) {
-                user.image = req.file.filename;
+            if (req.body.image) {
+                user.image = req.body.image;
             }
 
             if (req.body.age) {

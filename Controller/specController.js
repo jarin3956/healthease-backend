@@ -2,13 +2,13 @@ const Spec = require('../Model/specializationModel')
 
 const specRegister = async (req,res) => {
     try {
-
+        console.log(req.body.name,req.body.description,req.body.image,"spec reg data");
         const specFind = await Spec.findOne({name: req.body.name})
         if (!specFind) {
             const spec = new Spec({
                 name:req.body.name,
                 description : req.body.description,
-                image:req.file.filename
+                image: req.body.image,
             })
             const specData = await spec.save()
             if (specData) {

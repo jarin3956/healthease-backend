@@ -469,6 +469,34 @@ const loadDoctorBooking = async (req, res) => {
     }
 }
 
+const loadNextBooking = async (req, res) => {
+    try {
+        const { doctorId } = req.decodedDoctor;
+        const booking = await Bookings.findOne({ DocId: doctorId, Status: 'PENDING' })
+            .sort({ CreatedAt: -1 })
+            .exec()
+        if (booking === null) {
+            return res.status(204).json({ message: 'You do not have any bookings' })
+        }    
+        if (booking) {
+            const user = await User.findById(booking.UserId);
+            if (user) {
+                res.status(200).json({ message: 'Doctor bookings found', booking, user });
+            } else {
+                res.status(404).json({message:'Cannot find user data'})
+            }
+            console.log(booking, user, 'upcomming data snjkfkf');
+
+        } else {
+            res.status(404).json({ message: 'Cannot find bookings' })
+        }
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+}
+
 const loadUserBooking = async (req, res) => {
     try {
 
@@ -579,7 +607,7 @@ const updateCompleted = async (req, res) => {
     try {
         const bookingId = req.params.bookingConfirmId
         const booking = await Bookings.findById(bookingId);
-        
+
         if (booking) {
             const bookingDay = booking.Booked_day;
             const bookingTimeslot = booking.Booked_timeSlot;
@@ -807,5 +835,6 @@ module.exports = {
     followUpBooking,
     loadFollowUpData,
     followUpWalletPayment,
-    followUpPayment
+    followUpPayment,
+    loadNextBooking
 }

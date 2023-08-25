@@ -9,7 +9,8 @@ const { adminverify } = require('../Middleware/adminMiddleware')
 
 
 spec_route.get('/view',specController.loadSpec);
-spec_route.post('/register',adminverify, upload.single('image'),specController.specRegister);
+spec_route.post('/register',adminverify,specController.specRegister);
+// spec_route.post('/register',adminverify, upload.single('image'),specController.specRegister);
 spec_route.get('/admin-view',adminverify,specController.adminLoadSpec);
 spec_route.put('/control-specialization/:specId',adminverify,specController.changeStatus);
 spec_route.delete('/delete-specialization/:specId',adminverify,specController.deleteSpec);

@@ -55,6 +55,16 @@ function initializeSocket(server) {
             io.to(socket.id).emit('room:join', data)
         });
 
+        // socket.on('request-patient',(bookingId,patientId) => {
+        //     socket.in(patientId).emit('call-request-topatient',bookingId)
+        // })
+
+        socket.on('request-patient', (bookingId, patientId) => {
+            socket.in(patientId).emit('call-request-topatient', bookingId);
+            console.log(`Emitted call-request-to${patientId} with bookingId: ${bookingId}`);
+        });
+        
+
         socket.on('user:call', ({ to, offer }) => {
             io.to(to).emit('incomming:call', { from: socket.id, offer })
         })

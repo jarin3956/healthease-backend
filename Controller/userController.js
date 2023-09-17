@@ -315,9 +315,15 @@ const viewDocSlot = async (req, res) => {
 
 const loadDocSpec = async (req, res) => {
     try {
+        const { userId } = req.decodedUser;
         let specData = await Spec.find({ status: true })
         if (specData) {
-            res.status(200).json({ spec: specData });
+            const logUser = await User.findById(userId)
+            if (logUser) {
+                res.status(200).json({ spec: specData, logUser });
+            } else {
+                res.status(404).json({ message: 'Cannot find user data' });
+            }
         } else {
             res.status(404).json({ message: 'Cannot find data' });
         }

@@ -817,6 +817,55 @@ const loadTheBooking = async (req, res) => {
     }
 }
 
+const userChatEssentials = async (req,res) => {
+    try {
+        const {chatId} = req.params;
+        const booking = await Bookings.findById(chatId)
+        if (booking) {
+            const doctor = await Doctor.findById(booking.DocId)
+            if (doctor) {
+                const user = await User.findById(booking.UserId)
+                if (user) {
+                    res.status(200).json({ message: 'Booking and doctor data found', doctor,user })
+                } else {
+                    res.status(404).json({ message: 'User data not found' })
+                }
+            } else {
+                res.status(404).json({ message: 'Doctor data not found' })
+            }
+        } else {
+            res.status(404).json({ message: 'Booking data not found' })
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' })
+    }
+}
+
+const docChatEssentials = async (req,res) => {
+    try {
+        const {chatId} = req.params;
+        const booking = await Bookings.findById(chatId)
+        if (booking) {
+            const doctor = await Doctor.findById(booking.DocId)
+            if (doctor) {
+                const user = await User.findById(booking.UserId)
+                if (user) {
+                    res.status(200).json({ message: 'Booking and doctor data found', doctor,user })
+                } else {
+                    res.status(404).json({ message: 'User data not found' })
+                }
+            } else {
+                res.status(404).json({ message: 'Doctor data not found' })
+            }
+        } else {
+            res.status(404).json({ message: 'Booking data not found' })
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Internal server error' })
+    }
+}
+
+
 
 module.exports = {
     loadDoctor,
@@ -836,5 +885,7 @@ module.exports = {
     loadFollowUpData,
     followUpWalletPayment,
     followUpPayment,
-    loadNextBooking
+    loadNextBooking,
+    userChatEssentials,
+    docChatEssentials
 }

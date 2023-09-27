@@ -23,6 +23,9 @@ booking_route.post('/follow-up-booking',doctorVerify,bookingController.followUpB
 booking_route.get('/followup-bookingData/:bookingId',userVerify,bookingController.loadFollowUpData);
 booking_route.post('/followUp-paymentdata',userVerify,bookingController.followUpPayment);
 booking_route.post('/followup-walletBooking',userVerify,bookingController.followUpWalletPayment);
+booking_route.get('/load-user-chatess/:chatId',userVerify,bookingController.userChatEssentials);
+booking_route.get('/load-doc-chatess/:chatId',doctorVerify,bookingController.docChatEssentials);
+
 
 
 module.exports = booking_route;

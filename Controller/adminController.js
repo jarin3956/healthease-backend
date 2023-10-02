@@ -203,10 +203,10 @@ const changeUserStatus = async function (req, res) {
         }
         if (user.isBlocked === true) {
             user.isBlocked = false
-            resMsg = 'Unblocked Doctor Successfully'
+            resMsg = `Unblocked ${user.name} Successfully`
         } else {
             user.isBlocked = true
-            resMsg = 'Blocked Doctor Successfully'
+            resMsg = `Blocked ${user.name} Successfully`
         }
 
         await user.save();
@@ -263,8 +263,63 @@ const changeDoctorStatus = async function (req, res) {
 
 
         }
-        await doctor.save();
-        return res.status(200).json({ message: 'Verfied doctor Successfully', doctor: doctor });
+        const docSave = await doctor.save();
+        if (docSave) {
+            const theDoc = await Doctors.aggregate([
+                {
+                    $match: { _id: doctor._id }
+                },
+                {
+                    $addFields: {
+                        specializationId: {
+                            $toObjectId: '$specialization'
+                        }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'specialization',
+                        localField: 'specializationId',
+                        foreignField: '_id',
+                        as: 'specializationData'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$specializationData',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $project: {
+                        _id: 1,
+                        name: 1,
+                        age: 1,
+                        gender: 1,
+                        regno: 1,
+                        experience: 1,
+                        email: 1,
+                        password: 1,
+                        profileimg: 1,
+                        certificate: 1,
+                        fare: 1,
+                        status: 1,
+                        token: 1,
+                        approval: 1,
+                        specialization: {
+                            $ifNull: ['$specializationData.name', 'Unknown']
+                        }
+                    }
+                }
+    
+    
+            ]);
+
+
+            res.status(200).json({ message: `Verfied ${theDoc[0].name} Successfully`, doctor: theDoc[0] });
+
+        }
+        
 
 
     } catch (error) {
@@ -284,10 +339,10 @@ const handleBlocking = async (req, res) => {
         }
         if (doctor.isBlocked === true) {
             doctor.isBlocked = false
-            resMsg = 'Unblocked Doctor Successfully'
+            resMsg = `Unblocked Dr.${doctor.name} Successfully`
         } else {
             doctor.isBlocked = true
-            resMsg = 'Blocked Doctor Successfully'
+            resMsg = `Blocked Dr.${doctor.name} Successfully`
         }
         const docSave = await doctor.save();
         if (docSave) {

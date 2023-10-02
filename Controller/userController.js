@@ -320,7 +320,64 @@ const loadDocSpec = async (req, res) => {
         if (specData) {
             const logUser = await User.findById(userId)
             if (logUser) {
-                res.status(200).json({ spec: specData, logUser });
+                const doctorData = await Doctor.aggregate([
+                    {
+                        $match: {
+                            specialization: { $regex: /^[0-9a-fA-F]{24}$/ }
+                        }
+                    },
+                    {
+                        $addFields: {
+                            specializationId: {
+                                $toObjectId: '$specialization'
+                            }
+                        }
+                    },
+                    {
+                        $lookup: {
+                            from: 'specialization',
+                            localField: 'specializationId',
+                            foreignField: '_id',
+                            as: 'specializationData'
+                        }
+                    },
+                    {
+                        $unwind: {
+                            path: '$specializationData',
+                            preserveNullAndEmptyArrays: true
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 1,
+                            name: 1,
+                            age: 1,
+                            gender: 1,
+                            regno: 1,
+                            experience: 1,
+                            email: 1,
+                            password: 1,
+                            profileimg: 1,
+                            certificate: 1,
+                            fare: 1,
+                            final_fare: 1,
+                            status: 1,
+                            token: 1,
+                            approval: 1,
+                            isBlocked: 1,
+                            createdAt: 1,
+                            specialization: {
+                                $ifNull: ['$specializationData.name', 'Unknown']
+                            }
+                        }
+                    }
+                ]);
+                if (logUser && doctorData) {
+                    res.status(200).json({ spec: specData, logUser,doctorData });
+                } else {
+                    res.status(404).json({ message: 'Cannot find user data' });
+
+                }
             } else {
                 res.status(404).json({ message: 'Cannot find user data' });
             }

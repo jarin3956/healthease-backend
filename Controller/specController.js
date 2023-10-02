@@ -53,10 +53,10 @@ const changeStatus = async (req,res) => {
         } else {
             if (spec.status === true) {
                 spec.status = false
-                resMsg = 'Specialization blocked Successfull'
+                resMsg = `Specialization ${spec.name} blocked Successfull`
             } else {
                 spec.status = true
-                resMsg = 'Specialization unblocked Successfull'
+                resMsg = `Specialization ${spec.name} unblocked Successfull`
             }
             // spec.status = !spec.status
             await spec.save()
@@ -78,9 +78,9 @@ const deleteSpec = async (req,res) => {
         const spec = await Spec.findByIdAndDelete(specId)
 
         if (spec) {
-            res.status(200).json({ message: 'Deleted specialization successfully' });
+            res.status(200).json({ message: `Deleted specialization ${spec.name} successfully` });
         } else {
-            res.status(404).json({ message: 'Cannot found the specialization data' });
+            res.status(404).json({ message: `Cannot find specialization ${spec.name}s data` });
         }
     } catch (error) {
         console.log(error);
@@ -101,9 +101,9 @@ const editSpec = async (req,res) => {
 
             const allSpec = await Spec.find({})
 
-            res.status(200).json({ message: 'Edited specialization Successfully', spec: allSpec });
+            res.status(200).json({ message: `Edited specialization ${spec.name} Successfully`, spec: allSpec });
         } else {
-            res.status(404).json({ message: 'Cannot save the specialization data' });
+            res.status(404).json({ message: `Cannot save the specialization ${spec.name}s data` });
     
         }
     } catch (error) {
